@@ -47,10 +47,12 @@ services:
   airflow-init:
     <<: *airflow-common # Inherit common config
     container_name: airflow_init
-    entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "db", "init"]
+    # entrypoint:
+    #   ["/usr/bin/dumb-init", "--", "/usr/local/bin/entrypoint.sh", "db", "init"]
+    command: ["db", "init"]
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
-    user: "${AIRFLOW_UID}:0" # Set correct permissions
+    # user: "${AIRFLOW_UID}:0" # Set correct permissions
     depends_on:
       - postgres-airflow
 
