@@ -1,34 +1,159 @@
+# --- Common Airflow Configuration Blocks ---
+# These blocks help reduce repetition in the service definitions
+x-airflow-common: &airflow-common
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1}
+  user: "${AIRFLOW_UID}:0"
+  volumes: &airflow-common-volumes # Essential shared directories
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    # Shared volume for Spark event logs (Airflow History Server)
+    - spark_events:/opt/spark/events:rw
+    # Mount Spark Jars to Airflow containers so it can see them for SparkSubmitOperator
+    - ./spark-jobs:/opt/bitnami/spark/jobs
+  environment: &airflow-common-env
+    AIRFLOW_UID: ${AIRFLOW_UID}
+    AIRFLOW_GID: ${AIRFLOW_GID}
+    AIRFLOW_HOME: /opt/airflow
+    # Configuration for Airflow to connect to its metadata DB
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_USER:-airflow}:${AIRFLOW_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_DB:-airflow}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__WEBSERVER__RBAC: "true"
+    # Spark Connection details (Airflow will use this to connect to spark-master)
+    AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
+    # MinIO/S3 Connection details for Airflow operators
+    AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "host": "http://minio:9000", "login": "minioadmin", "password": "minioadminpassword", "extra": {"aws_access_key_id": "minioadmin", "aws_secret_access_key": "minioadminpassword", "endpoint_url": "http://minio:9000", "region_name": "us-east-1", "s3_verify": false}}'
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+# --- SERVICE DEFINITIONS ---
 services:
-  # --- 1. PostgreSQL Service (Database) ---
+  # --- 1. Airflow PostgreSQL (Metadata DB) ---
+  postgres-airflow:
+    image: postgres:13
+    container_name: postgres_airflow_meta
+    environment:
+      POSTGRES_USER: ${AIRFLOW_USER:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_PASSWORD:-airflow}
+      POSTGRES_DB: ${AIRFLOW_DB:-airflow}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-airflow-data:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432" # Use 5433 to avoid conflict with your main postgres_db (5432)
+    restart: unless-stopped
+
+  # --- 2. Airflow Webserver (UI on :8080) ---
+  airflow-webserver:
+    <<: *airflow-common # Inherit common config
+    container_name: airflow_webserver
+    depends_on:
+      - postgres-airflow
+      - spark-master
+    ports:
+      - "8080:8080"
+    entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "webserver"]
+    environment: *airflow-common-env
+    volumes: *airflow-common-volumes
+    restart: always
+
+  # --- 3. Airflow Scheduler ---
+  airflow-scheduler:
+    <<: *airflow-common # Inherit common config
+    container_name: airflow_scheduler
+    depends_on:
+      - postgres-airflow
+      - spark-master
+    volumes: *airflow-common-volumes
+    entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "scheduler"]
+    environment: *airflow-common-env
+    restart: always
+
+  # --- 4. Your Destination Database (PostgreSQL/Redshift Mock) ---
   postgres:
-    image: postgres:16-alpine 
+    image: postgres:16-alpine
     container_name: postgres_db
     ports:
-      - "5432:5432" # Map host port 5432 to container port 5432
+      - "5432:5432"
     environment:
       POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD 
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
       POSTGRES_DB: $POSTGRES_DB
     volumes:
-      - postgres_data:/var/lib/postgresql/data 
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-    healthcheck: # Ensure the service is ready before use
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-  
-  # --- 2. Ollama Service (LLM Server) ---
+
+  # --- 5. MinIO Service (S3-Compatible Data Lake) ---
+  minio:
+    image: minio/minio
+    container_name: minio_storage
+    ports:
+      - "9000:9000" # API port (S3)
+      - "9001:9001" # Web UI Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+  # --- 6. Spark Master Service (Scala ETL Engine) ---
+  spark-master:
+    image: bitnami/spark:latest
+    container_name: spark_master
+    ports:
+      - "7077:7077" # Spark Master Port
+      - "8081:8080" # Spark Web UI (Moved to 8081 to avoid Airflow conflict)
+    environment:
+      SPARK_MODE: master
+    volumes:
+      - ./spark-jobs:/opt/bitnami/spark/jobs
+      - spark_events:/opt/spark/events
+    restart: unless-stopped
+
+  # --- 7. Spark Worker Service ---
+  spark-worker:
+    image: bitnami/spark:latest
+    container_name: spark_worker
+    command: /opt/bitnami/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 2g
+    restart: unless-stopped
+
+  # --- 8. Trino Service (Athena Alternative: Distributed SQL) ---
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino_query_engine
+    ports:
+      - "8082:8080" # Mapped to 8082 to avoid Airflow/Spark conflicts
+    volumes:
+      - ./trino/etc:/etc/trino
+    depends_on:
+      - minio
+      - postgres
+    restart: unless-stopped
+
+  # --- 9. Ollama Service (LLM Server) ---
   ollama:
     image: ollama/ollama:latest
     container_name: ollama_llm
     ports:
-      - "11434:11434" # Expose the Ollama API port
+      - "11434:11434"
     volumes:
-      - ollama_models:/root/.ollama # Persistent storage for your downloaded models
+      - ollama_models:/root/.ollama
     restart: unless-stopped
-    
-# --- 3. Persistent Volumes ---
+
+# --- Persistent Volumes ---
 volumes:
   postgres_data:
   ollama_models:
+  minio_data:
+  postgres-airflow-data:
+  spark_events:
