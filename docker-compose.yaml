@@ -1,5 +1,4 @@
 # --- Common Airflow Configuration Blocks ---
-# These blocks help reduce repetition in the service definitions
 x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1}
   user: "${AIRFLOW_UID}:0"
@@ -41,15 +40,26 @@ services:
     volumes:
       - postgres-airflow-data:/var/lib/postgresql/data/pgdata
     ports:
-      - "5433:5432" # Use 5433 to avoid conflict with your main postgres_db (5432)
+      - "5433:5432"
     restart: unless-stopped
 
-  # --- 2. Airflow Webserver (UI on :8080) ---
-  airflow-webserver:
+  # --- 2. Airflow Initializer (THE MISSING SERVICE) ---
+  airflow-init:
     <<: *airflow-common # Inherit common config
-    container_name: airflow_webserver
+    container_name: airflow_init
+    entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "db", "init"]
+    environment: *airflow-common-env
+    volumes: *airflow-common-volumes
+    user: "${AIRFLOW_UID}:0" # Set correct permissions
     depends_on:
       - postgres-airflow
+
+  # --- 3. Airflow Webserver (UI on :8080) ---
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow_webserver
+    depends_on:
+      - airflow-init # Must wait for init to complete
       - spark-master
     ports:
       - "8080:8080"
@@ -58,19 +68,19 @@ services:
     volumes: *airflow-common-volumes
     restart: always
 
-  # --- 3. Airflow Scheduler ---
+  # --- 4. Airflow Scheduler ---
   airflow-scheduler:
-    <<: *airflow-common # Inherit common config
+    <<: *airflow-common
     container_name: airflow_scheduler
     depends_on:
-      - postgres-airflow
+      - airflow-init # Must wait for init to complete
       - spark-master
     volumes: *airflow-common-volumes
     entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "scheduler"]
     environment: *airflow-common-env
     restart: always
 
-  # --- 4. Your Destination Database (PostgreSQL/Redshift Mock) ---
+  # --- 5. Your Destination Database (PostgreSQL/Redshift Mock) ---
   postgres:
     image: postgres:16-alpine
     container_name: postgres_db
@@ -84,13 +94,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  # --- 5. MinIO Service (S3-Compatible Data Lake) ---
+  # --- 6. MinIO Service (S3-Compatible Data Lake) ---
   minio:
     image: minio/minio
     container_name: minio_storage
     ports:
-      - "9000:9000" # API port (S3)
-      - "9001:9001" # Web UI Console port
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadminpassword
@@ -99,40 +109,51 @@ services:
     command: server /data --console-address ":9001"
     restart: unless-stopped
 
-  # --- 6. Spark Master Service (Scala ETL Engine) ---
+  # --- 7. Spark Master Service (Scala ETL Engine) ---
   spark-master:
-    image: bitnami/spark:latest
+    image: apache/spark:3.5.1 # Specific and stable tag for the official image
     container_name: spark_master
     ports:
-      - "7077:7077" # Spark Master Port
-      - "8081:8080" # Spark Web UI (Moved to 8081 to avoid Airflow conflict)
+      - "7077:7077" # Spark Master Port for Worker communication and Airflow connection
+      - "8081:8080" # Spark Web UI (Mapped to 8081 to avoid Airflow conflict)
+    # EXPLICIT command required for the official Apache image to start the Master daemon
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
-      SPARK_MODE: master
+      # No SPARK_MODE needed for official image, but we need to set the log directory
+      SPARK_MASTER_WEBUI_PORT: 8080
+      SPARK_EVENT_LOG_ENABLED: "true"
+      SPARK_EVENT_LOG_DIR: /opt/spark/events
     volumes:
-      - ./spark-jobs:/opt/bitnami/spark/jobs
+      # Shared volumes are essential and were previously hidden by ...other_config...
+      - ./spark-jobs:/opt/spark/jobs # Mount your Scala job JARs
+      - spark_events:/opt/spark/events # Shared volume for Spark logs (for history server and Airflow)
+    restart: unless-stopped
+
+  # --- 8. Spark Worker Service (Official Image) ---
+  spark-worker:
+    image: apache/spark:3.5.1 # Specific and stable tag for the official image
+    container_name: spark_worker
+    # Must depend on master to ensure the cluster entry point exists
+    depends_on:
+      - spark-master
+    # EXPLICIT command required for the official Apache image to start the Worker daemon
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      # Worker needs to know where the master is
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_CORES: 2 # Adjust based on your laptop's resources
+      SPARK_WORKER_MEMORY: 2g # Adjust based on your laptop's resources
+    volumes:
+      # Workers don't need the jobs, but they often need the logs and scratch space
       - spark_events:/opt/spark/events
     restart: unless-stopped
 
-  # --- 7. Spark Worker Service ---
-  spark-worker:
-    image: bitnami/spark:latest
-    container_name: spark_worker
-    command: /opt/bitnami/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    depends_on:
-      - spark-master
-    environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
-      SPARK_WORKER_CORES: 2
-      SPARK_WORKER_MEMORY: 2g
-    restart: unless-stopped
-
-  # --- 8. Trino Service (Athena Alternative: Distributed SQL) ---
+  # --- 9. Trino Service (Athena Alternative: Distributed SQL) ---
   trino:
     image: trinodb/trino:latest
     container_name: trino_query_engine
     ports:
-      - "8082:8080" # Mapped to 8082 to avoid Airflow/Spark conflicts
+      - "8082:8080"
     volumes:
       - ./trino/etc:/etc/trino
     depends_on:
@@ -140,7 +161,7 @@ services:
       - postgres
     restart: unless-stopped
 
-  # --- 9. Ollama Service (LLM Server) ---
+  # --- 10. Ollama Service (LLM Server) ---
   ollama:
     image: ollama/ollama:latest
     container_name: ollama_llm
