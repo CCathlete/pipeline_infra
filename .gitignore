@@ -208,3 +208,8 @@ __marimo__/
 
 .env
 .vscode
+*dags*
+*logs*
+*plugins*
+*spark-jobs*
+*trino*

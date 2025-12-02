@@ -47,8 +47,6 @@ services:
   airflow-init:
     <<: *airflow-common # Inherit common config
     container_name: airflow_init
-    # entrypoint:
-    #   ["/usr/bin/dumb-init", "--", "/usr/local/bin/entrypoint.sh", "db", "init"]
     command: ["db", "init"]
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
@@ -65,7 +63,12 @@ services:
       - spark-master
     ports:
       - "8080:8080"
-    entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "webserver"]
+    command: ["webserver"]
+
+    #Not sure it's working, command to create login creds automatically.
+
+    # command: bash -c "airflow db init && airflow users create --username ${AIRFLOW_USER:-airflow} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_PASSWORD:-airflow}"
+
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
     restart: always
@@ -78,7 +81,7 @@ services:
       - airflow-init # Must wait for init to complete
       - spark-master
     volumes: *airflow-common-volumes
-    entrypoint: ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "scheduler"]
+    command: ["scheduler"]
     environment: *airflow-common-env
     restart: always
 
@@ -156,8 +159,11 @@ services:
     container_name: trino_query_engine
     ports:
       - "8082:8080"
+    user: "1000:1000"
     volumes:
       - ./trino/etc:/etc/trino
+      - ./trino_data:/var/lib/trino
+    entrypoint: ["/usr/lib/trino/bin/run-trino"]
     depends_on:
       - minio
       - postgres
