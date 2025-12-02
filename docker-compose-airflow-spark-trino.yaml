@@ -1,3 +1,5 @@
+# ./docker-compose-airflow-spark-trino.yaml
+
 # --- Common Airflow Configuration Blocks ---
 x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1}
@@ -184,7 +186,6 @@ services:
     entrypoint: ["/usr/lib/trino/bin/run-trino"]
     depends_on:
       - minio
-      - postgres
     restart: unless-stopped
     networks:
       - my_shared_network
@@ -203,7 +204,7 @@ services:
 
 networks:
   my_shared_network:
-  name: my_shared_network
+    name: my_shared_network
 
 # --- Persistent Volumes ---
 volumes:

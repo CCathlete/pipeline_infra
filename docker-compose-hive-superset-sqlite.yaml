@@ -1,3 +1,5 @@
+# ./docker-compose-hive-superset-sqlite.yaml
+
 services:
   # -------------------------------------------------------------------------
   # SQLite Service (Minimal Metastore DB)
@@ -63,8 +65,8 @@ networks:
   # This external network must be created separately OR
   # declared as 'external: true' in here but internal in the first yaml so its created there.
   my_shared_network:
-  name: my_shared_network
-  external: true
+    name: my_shared_network
+    external: true
 
 volumes:
   # Volume for persistent storage of the SQLite database file
