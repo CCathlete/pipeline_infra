@@ -77,6 +77,8 @@ services:
       - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
       - SQLALCHEMY_DATABASE_URI=${SUPERSET_METADATA_DB_URI}
       - SUPERSET_SQLALCHEMY_ALLOW_LOCAL_FILE=${SUPERSET_SQLALCHEMY_ALLOW_LOCAL_FILE}
+      - WTF_CSRF_ENABLED=${WTF_CSRF_ENABLED}
+      - FEATURE_FLAGS=${FEATURE_FLAGS}
     env_file:
       - ./.env # Load secret key from the .env file
     depends_on:
