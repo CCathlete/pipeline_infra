@@ -14,12 +14,13 @@ services:
     networks:
       - my_shared_network
     # This command keeps the container running so other services can connect
-    command: ["/bin/sh", "-c", "sleep infinity"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sleep infinity"]
 
-  # -------------------------------------------------------------------------
-  # Hive Metastore Service
-  # The central repository for Hive's metadata (table schemas, partitions, etc.)
-  # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Hive Metastore Service
+    # The central repository for Hive's metadata (table schemas, partitions, etc.)
+    # -------------------------------------------------------------------------
   hive-metastore:
     image: apache/hive:3.1.3
     container_name: hive_metastore
@@ -40,21 +41,46 @@ services:
       - my_shared_network
 
   # -------------------------------------------------------------------------
-  # Superset Service
-  # The data visualization and dashboarding tool
+  # Superset Initializer Service
+  # Runs one-time setup (DB init, admin user creation)
+  # -------------------------------------------------------------------------
+  superset-init:
+    image: apache/superset:3.0.0
+    container_name: superset_init
+    # This service runs the commands, referencing variables from the .env file.
+    entrypoint: /bin/bash -c
+    command: >
+      /usr/local/bin/superset db upgrade &&
+      /usr/local/bin/superset fab create-admin \
+        --username $SUPERSET_ADMIN_USERNAME \
+        --firstname Superset \
+        --lastname Admin \
+        --email $SUPERSET_ADMIN_EMAIL \
+        --password $SUPERSET_ADMIN_PASSWORD &&
+      /usr/local/bin/superset init
+    env_file:
+      - ./.env # Load credentials from the .env file
+    depends_on:
+      - hive-metastore # Wait for the Metastore to be ready (even though it uses SQLite)
+    networks:
+      - my_shared_network
+
+  # -------------------------------------------------------------------------
+  # Superset Webserver Service
+  # Runs the actual UI server
   # -------------------------------------------------------------------------
   superset:
     image: apache/superset:3.0.0
     container_name: superset_app
     ports:
-      # Superset web UI port
       - "8088:8088"
     environment:
-      # Superset configuration variables (adjust as needed)
       - SUPERSET_LOAD_EXAMPLES=false
-      - SUPERSET_SECRET_KEY=YOUR_SECRET_KEY_HERE # CHANGE THIS!
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY} # Reference secret key from .env
+    env_file:
+      - ./.env # Load secret key from the .env file
     depends_on:
-      - hive-metastore
+      - superset-init # Wait for the database and admin user to be created
     networks:
       - my_shared_network
 
