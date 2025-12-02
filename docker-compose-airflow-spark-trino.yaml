@@ -25,6 +25,8 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "host": "http://minio:9000", "login": "minioadmin", "password": "minioadminpassword", "extra": {"aws_access_key_id": "minioadmin", "aws_secret_access_key": "minioadminpassword", "endpoint_url": "http://minio:9000", "region_name": "us-east-1", "s3_verify": false}}'
   extra_hosts:
     - "host.docker.internal:host-gateway"
+  networks:
+    - my_shared_network
 
 # --- SERVICE DEFINITIONS ---
 services:
@@ -42,6 +44,8 @@ services:
     ports:
       - "5433:5432"
     restart: unless-stopped
+    networks:
+      - my_shared_network
 
   # --- 2. Airflow Initializer (THE MISSING SERVICE) ---
   airflow-init:
@@ -53,6 +57,8 @@ services:
     # user: "${AIRFLOW_UID}:0" # Set correct permissions
     depends_on:
       - postgres-airflow
+    networks:
+      - my_shared_network
 
   # --- 3. Airflow Webserver (UI on :8080) ---
   airflow-webserver:
@@ -72,6 +78,8 @@ services:
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
     restart: always
+    networks:
+      - my_shared_network
 
   # --- 4. Airflow Scheduler ---
   airflow-scheduler:
@@ -84,20 +92,24 @@ services:
     command: ["scheduler"]
     environment: *airflow-common-env
     restart: always
+    networks:
+      - my_shared_network
 
   # --- 5. Your Destination Database (PostgreSQL/Redshift Mock) ---
-  postgres:
-    image: postgres:16-alpine
-    container_name: postgres_db
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRES_DB: $POSTGRES_DB
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: postgres_db
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_USER: $POSTGRES_USER
+  #     POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  #     POSTGRES_DB: $POSTGRES_DB
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  # networks:
+  #   - my_shared_network
 
   # --- 6. MinIO Service (S3-Compatible Data Lake) ---
   minio:
@@ -113,6 +125,8 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     restart: unless-stopped
+    networks:
+      - my_shared_network
 
   # --- 7. Spark Master Service (Scala ETL Engine) ---
   spark-master:
@@ -133,6 +147,8 @@ services:
       - ./spark-jobs:/opt/spark/jobs # Mount your Scala job JARs
       - spark_events:/opt/spark/events # Shared volume for Spark logs (for history server and Airflow)
     restart: unless-stopped
+    networks:
+      - my_shared_network
 
   # --- 8. Spark Worker Service (Official Image) ---
   spark-worker:
@@ -152,6 +168,8 @@ services:
       # Workers don't need the jobs, but they often need the logs and scratch space
       - spark_events:/opt/spark/events
     restart: unless-stopped
+    networks:
+      - my_shared_network
 
   # --- 9. Trino Service (Athena Alternative: Distributed SQL) ---
   trino:
@@ -168,6 +186,8 @@ services:
       - minio
       - postgres
     restart: unless-stopped
+    networks:
+      - my_shared_network
 
   # --- 10. Ollama Service (LLM Server) ---
   ollama:
@@ -178,10 +198,16 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     restart: unless-stopped
+    networks:
+      - my_shared_network
+
+networks:
+  my_shared_network:
+  name: my_shared_network
 
 # --- Persistent Volumes ---
 volumes:
-  postgres_data:
+  # postgres_data:
   ollama_models:
   minio_data:
   postgres-airflow-data:

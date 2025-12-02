@@ -1,0 +1,71 @@
+services:
+  # -------------------------------------------------------------------------
+  # SQLite Service (Minimal Metastore DB)
+  # A very lightweight SQLite database for the Hive Metastore
+  # -------------------------------------------------------------------------
+  sqlite:
+    image: nouchka/sqlite3:latest
+    container_name: sqlite_metastore_db
+    volumes:
+      # This volume ensures your metastore data is persistent
+      - sqlite_data:/data
+    networks:
+      - my_shared_network
+    # This command keeps the container running so other services can connect
+    command: tail -f /dev/null
+
+  # -------------------------------------------------------------------------
+  # Hive Metastore Service
+  # The central repository for Hive's metadata (table schemas, partitions, etc.)
+  # -------------------------------------------------------------------------
+  hive-metastore:
+    image: apache/hive:3.1.3-bin
+    container_name: hive_metastore
+    ports:
+      # Default Hive Metastore port
+      - "9083:9083"
+    environment:
+      # Database driver and connection URL for the SQLite Metastore
+      - SERVICE_NAME=metastore
+      # Note: We use the container name 'sqlite' to connect to the database
+      - METASTORE_DB_HOSTNAME=sqlite
+      - METASTORE_DB_TYPE=sqlite
+      - METASTORE_DB_NAME=/data/metastore.db
+    # Ensure the SQLite service is up and ready before starting the Metastore
+    depends_on:
+      - sqlite
+    networks:
+      - my_shared_network
+
+  # -------------------------------------------------------------------------
+  # Superset Service
+  # The data visualization and dashboarding tool
+  # -------------------------------------------------------------------------
+  superset:
+    image: apache/superset:3.0.0
+    container_name: superset_app
+    ports:
+      # Superset web UI port
+      - "8088:8088"
+    environment:
+      # Superset configuration variables (adjust as needed)
+      - SUPERSET_LOAD_EXAMPLES=false
+      - SUPERSET_SECRET_KEY=YOUR_SECRET_KEY_HERE # CHANGE THIS!
+    depends_on:
+      - hive-metastore
+    networks:
+      - my_shared_network
+
+# -------------------------------------------------------------------------
+# Docker Networks and Volumes
+# -------------------------------------------------------------------------
+networks:
+  # This external network must be created separately OR
+  # declared as 'external: true' in here but internal in the first yaml so its created there.
+  my_shared_network:
+  name: my_shared_network
+  external: true
+
+volumes:
+  # Volume for persistent storage of the SQLite database file
+  sqlite_data:
