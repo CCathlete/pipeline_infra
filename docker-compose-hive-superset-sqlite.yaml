@@ -52,6 +52,7 @@ services:
 
     environment:
       - SQLALCHEMY_DATABASE_URI=${SUPERSET_METADATA_DB_URI}
+      - SUPERSET_SQLALCHEMY_ALLOW_LOCAL_FILE=${SUPERSET_SQLALCHEMY_ALLOW_LOCAL_FILE}
     env_file:
       - ./.env # Load credentials from the .env file
     depends_on:
