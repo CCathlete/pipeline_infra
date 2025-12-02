@@ -50,12 +50,17 @@ services:
     # This service runs the commands, referencing variables from the .env file.
     command: /bin/bash -c "superset db upgrade && superset fab create-admin --username $SUPERSET_ADMIN_USERNAME --firstname Superset --lastname Admin --email $SUPERSET_ADMIN_EMAIL --password $SUPERSET_ADMIN_PASSWORD && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"
 
+    environment:
+      - SQLALCHEMY_DATABASE_URI=${SUPERSET_METADATA_DB_URI}
     env_file:
       - ./.env # Load credentials from the .env file
     depends_on:
-      - hive-metastore # Wait for the Metastore to be ready (even though it uses SQLite)
+      - hive-metastore
+      - sqlite
     networks:
       - my_shared_network
+    volumes:
+      - sqlite_data:/app
 
   # -------------------------------------------------------------------------
   # Superset Webserver Service
@@ -68,13 +73,17 @@ services:
       - "8088:8088"
     environment:
       - SUPERSET_LOAD_EXAMPLES=false
-      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY} # Reference secret key from .env
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - SQLALCHEMY_DATABASE_URI=${SUPERSET_METADATA_DB_URI}
     env_file:
       - ./.env # Load secret key from the .env file
     depends_on:
-      - superset-init # Wait for the database and admin user to be created
+      - superset-init
+      - sqlite
     networks:
       - my_shared_network
+    volumes:
+      - sqlite_data:/app
 
 # -------------------------------------------------------------------------
 # Docker Networks and Volumes
