@@ -48,15 +48,8 @@ services:
     image: apache/superset:3.0.0
     container_name: superset_init
     # This service runs the commands, referencing variables from the .env file.
-    entrypoint: /bin/bash -c
-    command: >
-      /bin/bash -c "
-      superset db upgrade &&
-      superset fab create-admin --username $SUPERSET_ADMIN_USERNAME \
-        --firstname Superset --lastname Admin --email $SUPERSET_ADMIN_EMAIL \
-        --password $SUPERSET_ADMIN_PASSWORD &&
-      superset init
-      "
+    command: /bin/bash -c "superset db upgrade && superset fab create-admin --username $SUPERSET_ADMIN_USERNAME --firstname Superset --lastname Admin --email $SUPERSET_ADMIN_EMAIL --password $SUPERSET_ADMIN_PASSWORD && superset init"
+
     env_file:
       - ./.env # Load credentials from the .env file
     depends_on:
