@@ -14,7 +14,7 @@ services:
     networks:
       - my_shared_network
     # This command keeps the container running so other services can connect
-    command: tail -f /dev/null
+    command: sleep infinity
 
   # -------------------------------------------------------------------------
   # Hive Metastore Service
