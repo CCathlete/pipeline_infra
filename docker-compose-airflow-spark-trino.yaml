@@ -36,7 +36,9 @@ services:
   airflow-init:
     <<: *airflow-common # Inherit common config
     container_name: airflow_init
-    command: ["db", "init"]
+    # command: ["db", "init"]
+    command: bash -c "airflow db init && airflow users create --username ${AIRFLOW_USER:-airflow} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_PASSWORD:-airflow}"
+
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
     # user: "${AIRFLOW_UID}:0" # Set correct permissions
@@ -55,10 +57,6 @@ services:
     ports:
       - "8080:8080"
     command: ["webserver"]
-
-    #Not sure it's working, command to create login creds automatically.
-
-    # command: bash -c "airflow db init && airflow users create --username ${AIRFLOW_USER:-airflow} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${AIRFLOW_PASSWORD:-airflow}"
 
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
