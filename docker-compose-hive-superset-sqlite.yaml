@@ -51,7 +51,8 @@ services:
     command: /bin/bash -c "superset db upgrade && superset fab create-admin --username $SUPERSET_ADMIN_USERNAME --firstname Superset --lastname Admin --email $SUPERSET_ADMIN_EMAIL --password $SUPERSET_ADMIN_PASSWORD && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"
 
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      # This is the internal port within the network so its hard coded.
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     env_file:
       - ./.env # Load credentials from the .env file
     depends_on:
@@ -74,7 +75,7 @@ services:
     environment:
       - SUPERSET_LOAD_EXAMPLES=false
       - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
-      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     env_file:
       - ./.env # Load secret key from the .env file
     depends_on:
