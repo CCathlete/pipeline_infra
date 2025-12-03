@@ -27,8 +27,6 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "host": "http://minio:9000", "login": "minioadmin", "password": "minioadminpassword", "extra": {"aws_access_key_id": "minioadmin", "aws_secret_access_key": "minioadminpassword", "endpoint_url": "http://minio:9000", "region_name": "us-east-1", "s3_verify": false}}'
   extra_hosts:
     - "host.docker.internal:host-gateway"
-  networks:
-    - my_shared_network
 
 # --- SERVICE DEFINITIONS ---
 services:
@@ -42,6 +40,8 @@ services:
     # user: "${AIRFLOW_UID}:0" # Set correct permissions
     depends_on:
       - postgres
+    networks:
+      - my_shared_network
 
   # --- 3. Airflow Webserver (UI on :8080) ---
   airflow-webserver:
@@ -61,6 +61,8 @@ services:
     environment: *airflow-common-env
     volumes: *airflow-common-volumes
     restart: always
+    networks:
+      - my_shared_network
 
   # --- 4. Airflow Scheduler ---
   airflow-scheduler:
@@ -73,6 +75,8 @@ services:
     command: ["scheduler"]
     environment: *airflow-common-env
     restart: always
+    networks:
+      - my_shared_network
 
   # --- 5. Your Destination Database (PostgreSQL/Redshift Mock) ---
   postgres:
