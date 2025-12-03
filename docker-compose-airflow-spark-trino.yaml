@@ -27,6 +27,8 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "host": "http://minio:9000", "login": "minioadmin", "password": "minioadminpassword", "extra": {"aws_access_key_id": "minioadmin", "aws_secret_access_key": "minioadminpassword", "endpoint_url": "http://minio:9000", "region_name": "us-east-1", "s3_verify": false}}'
   extra_hosts:
     - "host.docker.internal:host-gateway"
+  networks:
+    - my_shared_network
 
 # --- SERVICE DEFINITIONS ---
 services:
@@ -93,8 +95,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-  networks:
-    - my_shared_network
+    networks:
+      - my_shared_network
 
   # --- 6. MinIO Service (S3-Compatible Data Lake) ---
   minio:
