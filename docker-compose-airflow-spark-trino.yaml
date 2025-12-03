@@ -18,7 +18,7 @@ x-airflow-common: &airflow-common
     AIRFLOW_HOME: /opt/airflow
     # Configuration for Airflow to connect to its metadata DB
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_USER:-airflow}:${AIRFLOW_PASSWORD:-airflow}@postgres-airflow/${AIRFLOW_DB:-airflow}
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__WEBSERVER__RBAC: "true"
     # Spark Connection details (Airflow will use this to connect to spark-master)
@@ -32,23 +32,6 @@ x-airflow-common: &airflow-common
 
 # --- SERVICE DEFINITIONS ---
 services:
-  # --- 1. Airflow PostgreSQL (Metadata DB) ---
-  postgres-airflow:
-    image: postgres:13
-    container_name: postgres_airflow_meta
-    environment:
-      POSTGRES_USER: ${AIRFLOW_USER:-airflow}
-      POSTGRES_PASSWORD: ${AIRFLOW_PASSWORD:-airflow}
-      POSTGRES_DB: ${AIRFLOW_DB:-airflow}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres-airflow-data:/var/lib/postgresql/data/pgdata
-    ports:
-      - "5433:5432"
-    restart: unless-stopped
-    networks:
-      - my_shared_network
-
   # --- 2. Airflow Initializer (THE MISSING SERVICE) ---
   airflow-init:
     <<: *airflow-common # Inherit common config
@@ -58,7 +41,7 @@ services:
     volumes: *airflow-common-volumes
     # user: "${AIRFLOW_UID}:0" # Set correct permissions
     depends_on:
-      - postgres-airflow
+      - postgres
     networks:
       - my_shared_network
 
@@ -98,20 +81,22 @@ services:
       - my_shared_network
 
   # --- 5. Your Destination Database (PostgreSQL/Redshift Mock) ---
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: postgres_db
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     POSTGRES_USER: $POSTGRES_USER
-  #     POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-  #     POSTGRES_DB: $POSTGRES_DB
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: unless-stopped
-  # networks:
-  #   - my_shared_network
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_PORT: $POSTGRES_PORT
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+  networks:
+    - my_shared_network
 
   # --- 6. MinIO Service (S3-Compatible Data Lake) ---
   minio:
@@ -208,8 +193,7 @@ networks:
 
 # --- Persistent Volumes ---
 volumes:
-  # postgres_data:
+  postgres_data:
   ollama_models:
   minio_data:
-  postgres-airflow-data:
   spark_events:
