@@ -206,7 +206,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-.env
+*.env*
+*env.*.tfvars
 .vscode
 *dags*
 *logs*
@@ -214,3 +215,4 @@ __marimo__/
 *spark-jobs*
 *trino_data*
 *password*
+*.terraform*
