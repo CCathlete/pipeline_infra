@@ -82,17 +82,17 @@ locals {
 
   airflow_volumes = [
     {
-      host_path      = "./dags"
+      host_path      = "${path.cwd}/dags"
       container_path = "/opt/airflow/dags"
       read_only      = false
     },
     {
-      host_path      = "./logs"
+      host_path      = "${path.cwd}/logs"
       container_path = "/opt/airflow/logs"
       read_only      = false
     },
     {
-      host_path      = "./plugins"
+      host_path      = "${path.cwd}/plugins"
       container_path = "/opt/airflow/plugins"
       read_only      = false
     },
@@ -102,7 +102,7 @@ locals {
       read_only      = false
     },
     {
-      host_path      = "./spark-jobs"
+      host_path      = "${path.cwd}/spark-jobs"
       container_path = "/opt/bitnami/spark/jobs"
       read_only      = false
     },
@@ -235,7 +235,7 @@ resource "docker_container" "spark_master" {
     "SPARK_EVENT_LOG_DIR=/opt/spark/events",
   ]
   volumes {
-    host_path      = "./spark-jobs"
+    host_path      = "${path.cwd}/spark-jobs"
     container_path = "/opt/spark/jobs"
   }
   volumes {
