@@ -28,6 +28,12 @@ variable "POSTGRES_PORT" {
   default     = 5432
 }
 
+variable "POSTGRES_HOST" {
+  description = "The name of the service that runs postgres."
+  type        = string
+  default     = "postgres"
+}
+
 
 # Airflow Configuration and Credentials (Updated to match TFVARS structure)
 

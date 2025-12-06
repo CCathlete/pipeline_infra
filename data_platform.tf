@@ -74,7 +74,7 @@ resource "docker_volume" "sqlite_data" {
 
 # 5. PostgreSQL
 resource "docker_container" "postgres" {
-  name  = "postgres_db"
+  name  = var.POSTGRES_HOST
   image = "postgres:16-alpine"
   ports {
     internal = 5432
@@ -111,6 +111,7 @@ locals {
     "POSTGRES_USER=${var.POSTGRES_USER}",
     "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
     "POSTGRES_DB=${var.POSTGRES_DB}",
+    "POSTGRES_HOST=${var.POSTGRES_HOST}",
   ]
 
   airflow_volumes = [
