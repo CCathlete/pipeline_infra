@@ -108,6 +108,9 @@ locals {
     "AIRFLOW__WEBSERVER__RBAC=true",
     "AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077",
     "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://minio:9000', 'login': 'minioadmin', 'password': 'minioadminpassword', 'extra': {'aws_access_key_id': 'minioadmin', 'aws_secret_access_key': 'minioadminpassword', 'endpoint_url': 'http://minio:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
+    "POSTGRES_USER=${var.POSTGRES_USER}",
+    "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
+    "POSTGRES_DB=${var.POSTGRES_DB}",
   ]
 
   airflow_volumes = [
@@ -146,11 +149,11 @@ resource "docker_container" "airflow_init" {
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
     echo "Waiting for Postgres at postgres:5432..."
-    until nc -z -v -w3 postgres 5432; do
-        echo "Postgres is unavailable - sleeping"
-        sleep 1
+    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h postgres -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
+      echo "Postgres is unavailable - sleeping"
+      sleep 1
     done
-    echo "Postgres is ready! Starting webserver..."
+    echo "Postgres is ready! Starting Airflow process..."
     airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
   EOT
   ]
@@ -179,11 +182,11 @@ resource "docker_container" "airflow_webserver" {
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
     echo "Waiting for Postgres at postgres:5432..."
-    until nc -z -v -w3 postgres 5432; do
-        echo "Postgres is unavailable - sleeping"
-        sleep 1
+    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h postgres -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
+      echo "Postgres is unavailable - sleeping"
+      sleep 1
     done
-    echo "Postgres is ready! Starting webserver..."
+    echo "Postgres is ready! Starting Airflow process..."
     exec webserver
   EOT
   ]
@@ -193,7 +196,6 @@ resource "docker_container" "airflow_webserver" {
   }
   env = local.airflow_env
 
-  # 👇 CORRECT FIX: Dynamic volumes block
   dynamic "volumes" {
     for_each = local.airflow_volumes
     content {
@@ -218,17 +220,16 @@ resource "docker_container" "airflow_scheduler" {
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
     echo "Waiting for Postgres at postgres:5432..."
-    until nc -z -v -w3 postgres 5432; do
-        echo "Postgres is unavailable - sleeping"
-        sleep 1
+    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h postgres -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
+      echo "Postgres is unavailable - sleeping"
+      sleep 1
     done
-    echo "Postgres is ready! Starting webserver..."
+    echo "Postgres is ready! Starting Airflow process..."
     exec scheduler
   EOT
   ]
   env = local.airflow_env
 
-  # 👇 CORRECT FIX: Dynamic volumes block
   dynamic "volumes" {
     for_each = local.airflow_volumes
     content {
