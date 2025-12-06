@@ -410,6 +410,10 @@ resource "docker_container" "superset_init" {
   command = ["/bin/bash", "-c", "superset db upgrade && superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD} && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"]
   env = [
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
+    "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
+    "SUPERSET_ADMIN_PASSWORD=${var.SUPERSET_ADMIN_PASSWORD}",
+    "SUPERSET_ADMIN_EMAIL=${var.SUPERSET_ADMIN_EMAIL}",
+    "SUPERSET_ADMIN_USERNAME=${var.SUPERSET_ADMIN_USERNAME}",
   ]
   volumes {
     volume_name    = docker_volume.sqlite_data.name
