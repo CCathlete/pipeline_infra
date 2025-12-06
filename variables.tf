@@ -28,15 +28,17 @@ variable "POSTGRES_PORT" {
   default     = 5432
 }
 
-# Airflow Configuration and Credentials
-variable "AIRFLOW_USER" {
-  description = "Airflow Webserver Admin username."
+
+# Airflow Configuration and Credentials (Updated to match TFVARS structure)
+
+variable "_AIRFLOW_WWW_USER_USERNAME" {
+  description = "Airflow Webserver Admin username (matches dotenv source)."
   type        = string
   default     = "airflow"
 }
 
-variable "AIRFLOW_PASSWORD" {
-  description = "Airflow Webserver Admin password."
+variable "_AIRFLOW_WWW_USER_PASSWORD" {
+  description = "Airflow Webserver Admin password (matches dotenv source)."
   type        = string
   sensitive   = true
   default     = "airflow"
@@ -47,6 +49,13 @@ variable "AIRFLOW_UID" {
   type        = number
   default     = 50001
 }
+
+variable "AIRFLOW_GID" {
+  description = "GID used for Airflow containers."
+  type        = number
+  default     = 0
+}
+
 
 # Superset Credentials
 variable "SUPERSET_ADMIN_USERNAME" {
@@ -74,6 +83,7 @@ variable "SUPERSET_SECRET_KEY" {
   sensitive   = true
   default     = "this_is_a_default_key_change_me"
 }
+
 
 # Image Tags
 variable "AIRFLOW_IMAGE_NAME" {

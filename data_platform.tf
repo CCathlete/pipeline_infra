@@ -70,7 +70,7 @@ resource "docker_container" "postgres" {
 locals {
   airflow_env = [
     "AIRFLOW_UID=${var.AIRFLOW_UID}",
-    "AIRFLOW_GID=0",
+    "AIRFLOW_GID=${var.AIRFLOW_GID}",
     "AIRFLOW_HOME=/opt/airflow",
     "AIRFLOW__CORE__EXECUTOR=LocalExecutor",
     "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
@@ -98,7 +98,7 @@ locals {
     },
     {
       volume_name    = docker_volume.spark_events.name
-      container_path = "/opt/spark/events"
+      container_path = "/opt/airflow/spark_events"
       read_only      = false
     },
     {
@@ -114,9 +114,18 @@ resource "docker_container" "airflow_init" {
   name    = "airflow_init"
   image   = var.AIRFLOW_IMAGE_NAME
   user    = "${var.AIRFLOW_UID}:0"
-  command = ["bash", "-c", "airflow db init && airflow users create --username ${var.AIRFLOW_USER} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var.AIRFLOW_PASSWORD}"]
+  command = ["bash", "-c", "airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}"]
   env     = local.airflow_env
-  volumes = local.airflow_volumes
+
+  dynamic "volumes" {
+    for_each = local.airflow_volumes
+    content {
+      host_path      = lookup(volumes.value, "host_path", null)
+      volume_name    = lookup(volumes.value, "volume_name", null)
+      container_path = volumes.value.container_path
+      read_only      = volumes.value.read_only
+    }
+  }
 
   networks_advanced {
     name = docker_network.my_shared_network.name
@@ -134,8 +143,18 @@ resource "docker_container" "airflow_webserver" {
     internal = 8080
     external = 8080
   }
-  env     = local.airflow_env
-  volumes = local.airflow_volumes
+  env = local.airflow_env
+
+  # 👇 CORRECT FIX: Dynamic volumes block
+  dynamic "volumes" {
+    for_each = local.airflow_volumes
+    content {
+      host_path      = lookup(volumes.value, "host_path", null)
+      volume_name    = lookup(volumes.value, "volume_name", null)
+      container_path = volumes.value.container_path
+      read_only      = volumes.value.read_only
+    }
+  }
 
   networks_advanced {
     name = docker_network.my_shared_network.name
@@ -151,7 +170,17 @@ resource "docker_container" "airflow_scheduler" {
   user    = "${var.AIRFLOW_UID}:0"
   command = ["scheduler"]
   env     = local.airflow_env
-  volumes = local.airflow_volumes
+
+  # 👇 CORRECT FIX: Dynamic volumes block
+  dynamic "volumes" {
+    for_each = local.airflow_volumes
+    content {
+      host_path      = lookup(volumes.value, "host_path", null)
+      volume_name    = lookup(volumes.value, "volume_name", null)
+      container_path = volumes.value.container_path
+      read_only      = volumes.value.read_only
+    }
+  }
 
   networks_advanced {
     name = docker_network.my_shared_network.name
@@ -376,8 +405,8 @@ output "data_platform_access" {
 output "initial_credentials" {
   description = "Initial login credentials for Airflow and Superset."
   value = {
-    airflow_user      = var.AIRFLOW_USER
-    airflow_password  = var.AIRFLOW_PASSWORD
+    airflow_user      = var._AIRFLOW_WWW_USER_USERNAME
+    airflow_password  = var._AIRFLOW_WWW_USER_PASSWORD
     superset_user     = var.SUPERSET_ADMIN_USERNAME
     superset_password = var.SUPERSET_ADMIN_PASSWORD
   }
