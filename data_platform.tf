@@ -280,11 +280,11 @@ resource "docker_container" "trino" {
   user       = "1000:1000"
   entrypoint = ["/usr/lib/trino/bin/run-trino"]
   volumes {
-    host_path      = "./trino/etc"
+    host_path      = "${path.cwd}/trino/etc"
     container_path = "/etc/trino"
   }
   volumes {
-    host_path      = "./trino_data"
+    host_path      = "${path.cwd}/trino_data"
     container_path = "/var/lib/trino"
   }
   networks_advanced {
