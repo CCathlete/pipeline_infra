@@ -188,7 +188,7 @@ resource "docker_container" "airflow_webserver" {
       sleep 1
     done
     echo "Postgres is ready! Starting Airflow process..."
-    exec webserver
+    airflow webserver
   EOT
   ]
   ports {
@@ -226,7 +226,7 @@ resource "docker_container" "airflow_scheduler" {
       sleep 1
     done
     echo "Postgres is ready! Starting Airflow process..."
-    exec scheduler
+    airflow scheduler
   EOT
   ]
   env = local.airflow_env
