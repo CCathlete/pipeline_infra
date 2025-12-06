@@ -149,8 +149,8 @@ resource "docker_container" "airflow_init" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Postgres at postgres:5432..."
-    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h postgres -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
+    echo "Waiting for Postgres at ${var.POSTGRES_HOST}:5432..."
+    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h ${var.POSTGRES_HOST} -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
       echo "Postgres is unavailable - sleeping"
       sleep 1
     done
@@ -182,8 +182,8 @@ resource "docker_container" "airflow_webserver" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Postgres at postgres:5432..."
-    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h postgres -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
+    echo "Waiting for Postgres at ${var.POSTGRES_HOST}:5432..."
+    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h ${var.POSTGRES_HOST} -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
       echo "Postgres is unavailable - sleeping"
       sleep 1
     done
@@ -220,8 +220,8 @@ resource "docker_container" "airflow_scheduler" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Postgres at postgres:5432..."
-    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h postgres -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
+    echo "Waiting for Postgres at ${var.POSTGRES_HOST}:5432..."
+    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h ${var.POSTGRES_HOST} -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
       echo "Postgres is unavailable - sleeping"
       sleep 1
     done
