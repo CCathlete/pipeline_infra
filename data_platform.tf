@@ -18,26 +18,56 @@ provider "docker" {}
 
 resource "docker_network" "my_shared_network" {
   name = "my_shared_network"
+
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+
+    # Ensures Terraform doesn't get confused if the name property changes.
+    ignore_changes = [
+      name
+    ]
+  }
 }
 
 resource "docker_volume" "postgres_data" {
   name = "postgres_data"
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
 }
 
 resource "docker_volume" "ollama_models" {
   name = "ollama_models"
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
 }
 
 resource "docker_volume" "minio_data" {
   name = "minio_data"
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
 }
 
 resource "docker_volume" "spark_events" {
   name = "spark_events"
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
 }
 
 resource "docker_volume" "sqlite_data" {
   name = "sqlite_data"
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
 }
 
 # --- Service Containers ---
@@ -111,11 +141,20 @@ locals {
 
 # 2. Airflow Initializer
 resource "docker_container" "airflow_init" {
-  name    = "airflow_init"
-  image   = var.AIRFLOW_IMAGE_NAME
-  user    = "${var.AIRFLOW_UID}:0"
-  command = ["bash", "-c", "airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}"]
-  env     = local.airflow_env
+  name  = "airflow_init"
+  image = var.AIRFLOW_IMAGE_NAME
+  user  = "${var.AIRFLOW_UID}:0"
+  command = ["bash", "-c", <<-EOT
+    echo "Waiting for Postgres at postgres:5432..."
+    until nc -z -v -w3 postgres 5432; do
+        echo "Postgres is unavailable - sleeping"
+        sleep 1
+    done
+    echo "Postgres is ready! Starting webserver..."
+    airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
+  EOT
+  ]
+  env = local.airflow_env
 
   dynamic "volumes" {
     for_each = local.airflow_volumes
@@ -135,10 +174,19 @@ resource "docker_container" "airflow_init" {
 
 # 3. Airflow Webserver
 resource "docker_container" "airflow_webserver" {
-  name    = "airflow_webserver"
-  image   = var.AIRFLOW_IMAGE_NAME
-  user    = "${var.AIRFLOW_UID}:0"
-  command = ["webserver"]
+  name  = "airflow_webserver"
+  image = var.AIRFLOW_IMAGE_NAME
+  user  = "${var.AIRFLOW_UID}:0"
+  command = ["bash", "-c", <<-EOT
+    echo "Waiting for Postgres at postgres:5432..."
+    until nc -z -v -w3 postgres 5432; do
+        echo "Postgres is unavailable - sleeping"
+        sleep 1
+    done
+    echo "Postgres is ready! Starting webserver..."
+    exec webserver
+  EOT
+  ]
   ports {
     internal = 8080
     external = 8080
@@ -165,11 +213,20 @@ resource "docker_container" "airflow_webserver" {
 
 # 4. Airflow Scheduler
 resource "docker_container" "airflow_scheduler" {
-  name    = "airflow_scheduler"
-  image   = var.AIRFLOW_IMAGE_NAME
-  user    = "${var.AIRFLOW_UID}:0"
-  command = ["scheduler"]
-  env     = local.airflow_env
+  name  = "airflow_scheduler"
+  image = var.AIRFLOW_IMAGE_NAME
+  user  = "${var.AIRFLOW_UID}:0"
+  command = ["bash", "-c", <<-EOT
+    echo "Waiting for Postgres at postgres:5432..."
+    until nc -z -v -w3 postgres 5432; do
+        echo "Postgres is unavailable - sleeping"
+        sleep 1
+    done
+    echo "Postgres is ready! Starting webserver..."
+    exec scheduler
+  EOT
+  ]
+  env = local.airflow_env
 
   # 👇 CORRECT FIX: Dynamic volumes block
   dynamic "volumes" {
@@ -314,10 +371,9 @@ resource "docker_container" "ollama" {
 
 # SQLite Service
 resource "docker_container" "sqlite" {
-  name       = "sqlite_metastore_db"
-  image      = "nouchka/sqlite3:latest"
-  entrypoint = ["/bin/sh", "-c"]
-  command    = ["sleep", "infinity"]
+  name    = "sqlite_metastore_db"
+  image   = "busybox:latest"
+  command = ["tail", "-f", "/dev/null"]
   volumes {
     volume_name    = docker_volume.sqlite_data.name
     container_path = "/data"
