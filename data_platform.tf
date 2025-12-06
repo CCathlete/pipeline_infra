@@ -103,7 +103,7 @@ locals {
     "AIRFLOW_GID=${var.AIRFLOW_GID}",
     "AIRFLOW_HOME=/opt/airflow",
     "AIRFLOW__CORE__EXECUTOR=LocalExecutor",
-    "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
+    "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
     "AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077",
