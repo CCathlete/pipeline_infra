@@ -70,6 +70,9 @@ resource "docker_volume" "sqlite_data" {
   }
 }
 
+# --- Custom Images ---
+# None at the moment.
+
 # --- Service Containers ---
 
 # 5. PostgreSQL
@@ -451,9 +454,24 @@ resource "docker_container" "hive_metastore" {
 
 # Superset Initializer Service
 resource "docker_container" "superset_init" {
-  name    = "superset_init"
-  image   = var.SUPERSET_IMAGE_NAME
-  command = ["/bin/bash", "-c", "superset db upgrade && superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD} && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"]
+  name  = "superset_init"
+  image = var.SUPERSET_IMAGE_NAME
+
+  command = [
+    "/bin/bash",
+    "-c",
+    <<-EOT
+      pip install trino
+      superset db upgrade 
+      superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD}
+      superset init
+      echo 'Initialization complete. Pausing for 10 seconds...'
+      sleep 10
+    EOT
+  ]
+
+  # command = ["/bin/bash", "-c", "superset db upgrade && superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD} && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"]
+
   env = [
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
     "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
@@ -469,12 +487,19 @@ resource "docker_container" "superset_init" {
     name = docker_network.my_shared_network.name
   }
   depends_on = [docker_container.hive_metastore, docker_container.postgres]
+
+  # must_run = false
+  provisioner "local-exec" {
+    when    = destroy
+    command = "docker logs ${self.name} || true"
+  }
 }
 
 # Superset Webserver Service
 resource "docker_container" "superset" {
   name  = "superset_app"
   image = var.SUPERSET_IMAGE_NAME
+
   ports {
     internal = 8088
     external = 8088
