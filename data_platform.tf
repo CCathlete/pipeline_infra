@@ -142,7 +142,7 @@ locals {
     },
   ]
 
-  pull_commands = [for model in var.ollama_models_to_pull : format("ollama pull %s", model)]
+  pull_commands_string = join(" && ", [for model in var.ollama_models_to_pull : format("ollama pull %s", model)])
 }
 
 # Airflow Initializer
@@ -363,8 +363,20 @@ resource "docker_container" "ollama_init" {
   entrypoint = ["/bin/sh"]
   command = [
     "-c",
-    "ollama serve & sleep 5 &&",
-    join(" && ", local.pull_commands)
+    <<-EOT
+      # Start server in background
+      ollama serve &
+      PID=$!
+      
+      # Wait for the server to fully start
+      sleep 5
+      
+      # Run all pull commands (ensuring success)
+      ${local.pull_commands_string}
+      
+      # Kill the background server process
+      kill $PID
+    EOT
   ]
 
   volumes {
