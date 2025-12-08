@@ -141,6 +141,8 @@ locals {
       read_only      = false
     },
   ]
+
+  pull_commands = [for model in var.ollama_models_to_pull : format("ollama pull %s", model)]
 }
 
 # Airflow Initializer
@@ -357,7 +359,7 @@ resource "docker_container" "trino" {
 resource "docker_container" "ollama_init" {
   name    = "ollama_init"
   image   = "ollama/ollama:latest"
-  command = concat(["pull"], var.ollama_models_to_pull)
+  command = ["/bin/sh", "-c", join(" && ", local.pull_commands)]
   volumes {
     volume_name    = docker_volume.ollama_models.name
     container_path = "/root/.ollama"
@@ -366,6 +368,13 @@ resource "docker_container" "ollama_init" {
     name = docker_network.my_shared_network.name
   }
   depends_on = [docker_volume.ollama_models]
+  must_run   = false
+
+  # Extracting logs if container is terminated.
+  provisioner "local-exec" {
+    when    = destroy
+    command = "docker logs ${self.name} || true"
+  }
 }
 
 # Ollama Service
