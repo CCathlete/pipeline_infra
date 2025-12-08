@@ -216,7 +216,7 @@ resource "docker_container" "airflow_webserver" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master]
+  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio]
 }
 
 # Airflow Scheduler
@@ -250,7 +250,7 @@ resource "docker_container" "airflow_scheduler" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master]
+  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio]
 }
 
 # MinIO Service
@@ -355,7 +355,7 @@ resource "docker_container" "trino" {
     name = docker_network.my_shared_network.name
   }
   restart    = "unless-stopped"
-  depends_on = [docker_container.minio]
+  depends_on = [docker_container.minio, docker_container.hive_metastore]
 }
 
 # Ollama Initializer
@@ -442,14 +442,17 @@ resource "docker_container" "hive_metastore" {
   }
   env = [
     "SERVICE_NAME=metastore",
-    "METASTORE_DB_HOSTNAME=sqlite",
-    "METASTORE_DB_TYPE=sqlite",
-    "METASTORE_DB_NAME=/data/metastore.db",
+    "METASTORE_DB_HOSTNAME=${var.POSTGRES_HOST}",
+    "METASTORE_DB_TYPE=postgres",
+    "METASTORE_DB_NAME=${var.POSTGRES_DB}",
+    "METASTORE_DB_USER=${var.POSTGRES_USER}",
+    "METASTORE_DB_PASSWORD=${var.POSTGRES_PASSWORD}",
+    "METASTORE_DB_PORT=${var.POSTGRES_PORT}",
   ]
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.sqlite]
+  depends_on = [docker_container.postgres]
 }
 
 # Superset Initializer Service
