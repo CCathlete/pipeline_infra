@@ -143,7 +143,7 @@ locals {
   ]
 }
 
-# 2. Airflow Initializer
+# Airflow Initializer
 resource "docker_container" "airflow_init" {
   name  = "airflow_init"
   image = var.AIRFLOW_IMAGE_NAME
@@ -176,7 +176,7 @@ resource "docker_container" "airflow_init" {
   depends_on = [docker_container.postgres]
 }
 
-# 3. Airflow Webserver
+# Airflow Webserver
 resource "docker_container" "airflow_webserver" {
   name  = "airflow_webserver"
   image = var.AIRFLOW_IMAGE_NAME
@@ -214,7 +214,7 @@ resource "docker_container" "airflow_webserver" {
   depends_on = [docker_container.airflow_init, docker_container.spark_master]
 }
 
-# 4. Airflow Scheduler
+# Airflow Scheduler
 resource "docker_container" "airflow_scheduler" {
   name  = "airflow_scheduler"
   image = var.AIRFLOW_IMAGE_NAME
@@ -248,7 +248,7 @@ resource "docker_container" "airflow_scheduler" {
   depends_on = [docker_container.airflow_init, docker_container.spark_master]
 }
 
-# 6. MinIO Service
+# MinIO Service
 resource "docker_container" "minio" {
   name  = "minio_storage"
   image = "minio/minio"
@@ -275,7 +275,7 @@ resource "docker_container" "minio" {
   restart = "unless-stopped"
 }
 
-# 7. Spark Master
+# Spark Master
 resource "docker_container" "spark_master" {
   name  = "spark_master"
   image = var.SPARK_IMAGE_NAME
@@ -307,7 +307,7 @@ resource "docker_container" "spark_master" {
   restart = "unless-stopped"
 }
 
-# 8. Spark Worker
+# Spark Worker
 resource "docker_container" "spark_worker" {
   name    = "spark_worker"
   image   = var.SPARK_IMAGE_NAME
@@ -328,7 +328,7 @@ resource "docker_container" "spark_worker" {
   depends_on = [docker_container.spark_master]
 }
 
-# 9. Trino Service
+# Trino Service
 resource "docker_container" "trino" {
   name  = "trino_query_engine"
   image = "trinodb/trino:latest"
@@ -353,7 +353,22 @@ resource "docker_container" "trino" {
   depends_on = [docker_container.minio]
 }
 
-# 10. Ollama Service
+# Ollama Initializer
+resource "docker_container" "ollama_init" {
+  name    = "ollama_init"
+  image   = "ollama/ollama:latest"
+  command = concat(["pull"], var.ollama_models_to_pull)
+  volumes {
+    volume_name    = docker_volume.ollama_models.name
+    container_path = "/root/.ollama"
+  }
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  depends_on = [docker_volume.ollama_models]
+}
+
+# Ollama Service
 resource "docker_container" "ollama" {
   name  = "ollama_llm"
   image = "ollama/ollama:latest"
@@ -368,7 +383,8 @@ resource "docker_container" "ollama" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  restart = "unless-stopped"
+  depends_on = [docker_container.ollama_init]
+  restart    = "unless-stopped"
 }
 
 # SQLite Service

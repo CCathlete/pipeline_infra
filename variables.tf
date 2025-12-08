@@ -109,3 +109,10 @@ variable "SUPERSET_IMAGE_NAME" {
   type        = string
   default     = "apache/superset:3.0.0"
 }
+
+# List of models to pull for Ollama (RAG creation).
+variable "ollama_models_to_pull" {
+  description = "A list of Ollama model names to be pulled by the init container."
+  type        = list(string)
+  default     = ["llama3", "nomic-embed-text", "gemma2"]
+}
