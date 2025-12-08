@@ -357,9 +357,16 @@ resource "docker_container" "trino" {
 
 # Ollama Initializer
 resource "docker_container" "ollama_init" {
-  name    = "ollama_init"
-  image   = "ollama/ollama:latest"
-  command = ["/bin/sh", "-c", join(" && ", local.pull_commands)]
+  name  = "ollama_init"
+  image = "ollama/ollama:latest"
+
+  entrypoint = ["/bin/sh"]
+  command = [
+    "-c",
+    "ollama serve & sleep 5 &&",
+    join(" && ", local.pull_commands)
+  ]
+
   volumes {
     volume_name    = docker_volume.ollama_models.name
     container_path = "/root/.ollama"
