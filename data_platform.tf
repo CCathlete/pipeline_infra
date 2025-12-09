@@ -95,8 +95,8 @@ locals {
   hive_site_xml = templatefile(
     "${path.cwd}/hive/hive-site.xml.tmpl",
     {
-      postgres_host     = var.POSTGRES_HOST
-      postgres_port     = var.POSTGRES_PORT
+      postgres_host     = docker_container.postgres.name
+      postgres_port     = 5432
       postgres_db       = var.POSTGRES_DB
       postgres_user     = var.POSTGRES_USER
       postgres_password = var.POSTGRES_PASSWORD
