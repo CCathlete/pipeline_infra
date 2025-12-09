@@ -73,49 +73,7 @@ resource "docker_volume" "sqlite_data" {
 # --- Custom Images ---
 # None at the moment.
 
-# --- Local Files ---
-data "templatefile" "hive_site" {
-  template = "${path.module}/hive/hive-site.xml.tmpl"
-  vars = {
-    postgres_host     = var.POSTGRES_HOST
-    postgres_port     = var.POSTGRES_PORT
-    postgres_db       = var.POSTGRES_DB
-    postgres_user     = var.POSTGRES_USER
-    postgres_password = var.POSTGRES_PASSWORD
-  }
-}
-
-resource "local_file" "hive_site_rendered" {
-  content  = data.templatefile.hive_site.rendered
-  filename = "${path.module}/generated/hive-site.xml"
-}
-
-# --- Service Containers ---
-
-# 5. PostgreSQL
-resource "docker_container" "postgres" {
-  name  = var.POSTGRES_HOST
-  image = "postgres:16-alpine"
-  ports {
-    internal = 5432
-    external = var.POSTGRES_PORT
-  }
-  env = [
-    "POSTGRES_USER=${var.POSTGRES_USER}",
-    "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
-    "POSTGRES_DB=${var.POSTGRES_DB}",
-    "PGDATA=/var/lib/postgresql/data/pgdata",
-  ]
-  volumes {
-    volume_name    = docker_volume.postgres_data.name
-    container_path = "/var/lib/postgresql/data"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  restart = "unless-stopped"
-}
-
+# --- Local Variables ---
 # Airflow Common Environment (used by multiple services)
 locals {
   airflow_env = [
@@ -133,6 +91,17 @@ locals {
     "POSTGRES_DB=${var.POSTGRES_DB}",
     "POSTGRES_HOST=${var.POSTGRES_HOST}",
   ]
+
+  hive_site_xml = templatefile(
+    "${path.module}/hive/hive-site.xml.tmpl",
+    {
+      postgres_host     = var.POSTGRES_HOST
+      postgres_port     = var.POSTGRES_PORT
+      postgres_db       = var.POSTGRES_DB
+      postgres_user     = var.POSTGRES_USER
+      postgres_password = var.POSTGRES_PASSWORD
+    }
+  )
 
   airflow_volumes = [
     {
@@ -163,6 +132,40 @@ locals {
   ]
 
   pull_commands_string = join(" && ", [for model in var.ollama_models_to_pull : format("ollama pull %s", model)])
+}
+
+# --- Local Files ---
+resource "local_file" "hive_site_rendered" {
+  content  = local.hive_site_xml
+  filename = "${path.cwd}/generated/hive-site.xml"
+}
+
+
+
+# --- Service Containers ---
+
+# 5. PostgreSQL
+resource "docker_container" "postgres" {
+  name  = var.POSTGRES_HOST
+  image = "postgres:16-alpine"
+  ports {
+    internal = 5432
+    external = var.POSTGRES_PORT
+  }
+  env = [
+    "POSTGRES_USER=${var.POSTGRES_USER}",
+    "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
+    "POSTGRES_DB=${var.POSTGRES_DB}",
+    "PGDATA=/var/lib/postgresql/data/pgdata",
+  ]
+  volumes {
+    volume_name    = docker_volume.postgres_data.name
+    container_path = "/var/lib/postgresql/data"
+  }
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart = "unless-stopped"
 }
 
 # Airflow Initializer
