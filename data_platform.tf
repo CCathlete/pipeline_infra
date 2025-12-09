@@ -436,12 +436,17 @@ resource "docker_container" "sqlite" {
 resource "docker_container" "hive_metastore" {
   name  = "hive_metastore"
   image = "apache/hive:3.1.3"
-  ports {
-    internal = 9083
-    external = 9083
+
+  volumes {
+    host_path      = "${path.module}/init-metastore.sh"
+    container_path = "/docker-init/init-metastore.sh"
   }
+
+  command = [
+    "bash", "/docker-init/init-metastore.sh"
+  ]
+
   env = [
-    "SERVICE_NAME=metastore",
     "METASTORE_DB_HOSTNAME=${var.POSTGRES_HOST}",
     "METASTORE_DB_TYPE=postgres",
     "METASTORE_DB_NAME=${var.POSTGRES_DB}",
@@ -449,9 +454,16 @@ resource "docker_container" "hive_metastore" {
     "METASTORE_DB_PASSWORD=${var.POSTGRES_PASSWORD}",
     "METASTORE_DB_PORT=${var.POSTGRES_PORT}",
   ]
+
+  ports {
+    internal = 9083
+    external = 9083
+  }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
+
   depends_on = [docker_container.postgres]
 }
 
