@@ -463,7 +463,7 @@ resource "docker_container" "hive_metastore" {
   }
 
   volumes {
-    host_path      = "${path.module}/generated/hive-site.xml"
+    host_path      = "${path.cwd}/generated/hive-site.xml"
     container_path = "/opt/hive/conf/hive-site.xml"
   }
   volumes {
