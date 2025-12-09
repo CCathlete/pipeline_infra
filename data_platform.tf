@@ -93,7 +93,7 @@ locals {
   ]
 
   hive_site_xml = templatefile(
-    "${path.module}/hive/hive-site.xml.tmpl",
+    "${path.cwd}/hive/hive-site.xml.tmpl",
     {
       postgres_host     = var.POSTGRES_HOST
       postgres_port     = var.POSTGRES_PORT
