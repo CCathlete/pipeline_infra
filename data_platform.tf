@@ -73,6 +73,23 @@ resource "docker_volume" "sqlite_data" {
 # --- Custom Images ---
 # None at the moment.
 
+# --- Local Files ---
+data "templatefile" "hive_site" {
+  template = "${path.module}/hive/hive-site.xml.tmpl"
+  vars = {
+    postgres_host     = var.POSTGRES_HOST
+    postgres_port     = var.POSTGRES_PORT
+    postgres_db       = var.POSTGRES_DB
+    postgres_user     = var.POSTGRES_USER
+    postgres_password = var.POSTGRES_PASSWORD
+  }
+}
+
+resource "local_file" "hive_site_rendered" {
+  content  = data.templatefile.hive_site.rendered
+  filename = "${path.module}/generated/hive-site.xml"
+}
+
 # --- Service Containers ---
 
 # 5. PostgreSQL
@@ -437,28 +454,26 @@ resource "docker_container" "hive_metastore" {
   name  = "hive_metastore"
   image = "apache/hive:3.1.3"
 
-  volumes {
-    host_path      = "${path.module}/init-metastore.sh"
-    container_path = "/docker-init/init-metastore.sh"
-  }
-
-  command = [
-    "bash", "/docker-init/init-metastore.sh"
-  ]
-
-  env = [
-    "METASTORE_DB_HOSTNAME=${var.POSTGRES_HOST}",
-    "METASTORE_DB_TYPE=postgres",
-    "METASTORE_DB_NAME=${var.POSTGRES_DB}",
-    "METASTORE_DB_USER=${var.POSTGRES_USER}",
-    "METASTORE_DB_PASSWORD=${var.POSTGRES_PASSWORD}",
-    "METASTORE_DB_PORT=${var.POSTGRES_PORT}",
-  ]
-
   ports {
     internal = 9083
     external = 9083
   }
+
+  volumes {
+    host_path      = "${path.module}/generated/hive-site.xml"
+    container_path = "/opt/hive/conf/hive-site.xml"
+  }
+  volumes {
+    host_path      = "${path.cwd}/hive/postgresql-42.7.3.jar"
+    container_path = "/opt/hive/lib/postgresql-42.7.3.jar"
+  }
+
+  env = [
+    "SERVICE_NAME=metastore",
+    "SKIP_SCHEMA_INIT=false",
+    "HIVE_EXECUTION_ENGINE=mr"
+  ]
+
 
   networks_advanced {
     name = docker_network.my_shared_network.name
@@ -466,6 +481,7 @@ resource "docker_container" "hive_metastore" {
 
   depends_on = [docker_container.postgres]
 }
+
 
 # Superset Initializer Service
 resource "docker_container" "superset_init" {

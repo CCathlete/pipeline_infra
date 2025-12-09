@@ -1,0 +1,21 @@
+<configuration>
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://${postgres_host}:${postgres_port}/${postgres_db}</value>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>${postgres_user}</value>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>${postgres_password}</value>
+  </property>
+</configuration>
