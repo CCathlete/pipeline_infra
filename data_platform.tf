@@ -115,6 +115,13 @@ locals {
       postgres_password = var.POSTGRES_METADATA_PASSWORD
     }
   )
+  core_site_xml = templatefile(
+    "${path.cwd}/hive/core-site.xml.tmpl",
+    {
+      minio_access_key = var.MINIO_ACCESS_KEY
+      minio_secret_key = var.MINIO_SECRET_KEY
+    }
+  )
 
   airflow_volumes = [
     {
@@ -151,6 +158,10 @@ locals {
 resource "local_file" "hive_site_rendered" {
   content  = local.hive_site_xml
   filename = "${path.cwd}/generated/hive-site.xml"
+}
+resource "local_file" "core_site_rendered" {
+  content  = local.core_site_xml
+  filename = "${path.cwd}/generated/core-site.xml"
 }
 
 # --- Service Containers ---
@@ -515,11 +526,9 @@ resource "null_resource" "hive_init_schema" {
           --entrypoint /bin/bash \
           -v ${path.cwd}/generated/hive-site.xml:/opt/hive/conf/hive-site.xml \
           -v ${path.cwd}/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar \
-          -v ${path.cwd}/hive/core-site.xml:/opt/hive/conf/core-site.xml \
+          -v ${path.cwd}/generated/core-site.xml:/opt/hive/conf/core-site.xml \
           -e HIVE_CONF_DIR=/opt/hive/conf \
           -e HADOOP_CLIENT_OPTS='-Xmx2G' \
-          -e MINIO_ACCESS_KEY=${var.MINIO_ACCESS_KEY} \
-          -e MINIO_SECRET_KEY=${var.MINIO_SECRET_KEY} \
           apache/hive:4.1.0 \
           -c "/opt/hive/bin/schematool -dbType postgres -initSchema"
           
@@ -552,6 +561,10 @@ resource "docker_container" "hive-metastore" {
   volumes {
     host_path      = "${path.cwd}/generated/hive-site.xml"
     container_path = "/opt/hive/conf/hive-site.xml"
+  }
+  volumes {
+    host_path      = "${path.cwd}/generated/core-site.xml"
+    container_path = "/opt/hive/conf/core-site.xml"
   }
   volumes {
     host_path      = "${path.cwd}/hive/postgresql-42.7.3.jar"
