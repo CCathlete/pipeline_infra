@@ -21,7 +21,8 @@ resource "docker_network" "my_shared_network" {
 
   lifecycle {
     # Prevents 'terraform destroy' from deleting this network.
-    prevent_destroy = true
+    # prevent_destroy = true
+    prevent_destroy = false
     ignore_changes = [
       name
     ]
@@ -407,7 +408,8 @@ resource "docker_container" "trino" {
     container_path = "/var/lib/trino"
   }
   networks_advanced {
-    name = docker_network.my_shared_network.name
+    name    = docker_network.my_shared_network.name
+    aliases = ["trino"]
   }
   restart    = "unless-stopped"
   depends_on = [docker_container.minio, docker_container.hive_metastore]
@@ -541,7 +543,7 @@ resource "docker_container" "hive_metastore" {
     external = 9083
   }
   entrypoint = ["/opt/hive/bin/hive"]
-  command    = ["metastore"]
+  command    = ["--service", "metastore"]
 
   # Mount the rendered XML and Postgres driver
   volumes {
@@ -559,7 +561,8 @@ resource "docker_container" "hive_metastore" {
   ]
 
   networks_advanced {
-    name = docker_network.my_shared_network.name
+    name    = docker_network.my_shared_network.name
+    aliases = ["hive_metastore"]
   }
 
   depends_on = [null_resource.hive_init_schema]
