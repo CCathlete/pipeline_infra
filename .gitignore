@@ -215,3 +215,5 @@ __marimo__/
 *trino_data*
 *password*
 *.terraform*
+**/*hive*.xml
+**/generated

@@ -95,7 +95,8 @@ locals {
   hive_site_xml = templatefile(
     "${path.cwd}/hive/hive-site.xml.tmpl",
     {
-      postgres_host     = docker_container.postgres.name
+      postgres_host = docker_container.postgres.name
+      # postgres_host     = "172.17.0.1"
       postgres_port     = 5432
       postgres_db       = var.POSTGRES_DB
       postgres_user     = var.POSTGRES_USER
@@ -452,16 +453,62 @@ resource "docker_container" "sqlite" {
   }
 }
 
+# Hive schema initialization (Runs before the main Metastore service)
+resource "null_resource" "hive_init_schema" {
+  depends_on = [
+    docker_container.postgres,
+    local_file.hive_site_rendered,
+  ]
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      echo "Waiting for Postgres at ${docker_container.postgres.name}:5432..."
+      
+      # Loop until psql command succeeds. Output is now shown for better debugging.
+      until docker exec ${docker_container.postgres.name} psql -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c "SELECT 'Running this from within postgres';" ; do
+        echo "Postgres is not accepting connections yet... sleeping"
+        sleep 2
+      done
+      
+      echo "Postgres is ready. Starting Hive schematool initialization..."
+
+      # Run the temporary container to execute schematool
+      docker run --rm \
+          --network ${docker_network.my_shared_network.name} \
+          --entrypoint /bin/bash \
+          -v ${path.cwd}/generated/hive-site.xml:/opt/hive/conf/hive-site.xml \
+          -v ${path.cwd}/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar \
+          -e HIVE_CONF_DIR=/opt/hive/conf \
+          -e HADOOP_CLIENT_OPTS='-Xmx2G' \
+          apache/hive:4.1.0 \
+          -c "/opt/hive/bin/schematool -dbType postgres -initSchema"
+          
+      # Check if the schematool command succeeded before marking the resource complete
+      if [ $? -ne 0 ]; then
+        echo "ERROR: Hive schematool failed to initialize schema!"
+        exit 1
+      fi
+      
+      echo "Hive schema initialization successful."
+    EOT
+  }
+}
+
+
 # Hive Metastore Service
 resource "docker_container" "hive_metastore" {
   name  = "hive_metastore"
-  image = "apache/hive:3.1.3"
+  image = "apache/hive:4.1.0"
 
   ports {
     internal = 9083
     external = 9083
   }
+  entrypoint = ["/opt/hive/bin/hive"]
+  command    = ["metastore"]
 
+  # Mount the rendered XML and Postgres driver
   volumes {
     host_path      = "${path.cwd}/generated/hive-site.xml"
     container_path = "/opt/hive/conf/hive-site.xml"
@@ -473,18 +520,15 @@ resource "docker_container" "hive_metastore" {
 
   env = [
     "SERVICE_NAME=metastore",
-    "SKIP_SCHEMA_INIT=false",
-    "HIVE_EXECUTION_ENGINE=mr"
+    "HIVE_EXECUTION_ENGINE=mr",
   ]
-
 
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
 
-  depends_on = [docker_container.postgres]
+  depends_on = [null_resource.hive_init_schema]
 }
-
 
 # Superset Initializer Service
 resource "docker_container" "superset_init" {
@@ -503,8 +547,6 @@ resource "docker_container" "superset_init" {
       sleep 10
     EOT
   ]
-
-  # command = ["/bin/bash", "-c", "superset db upgrade && superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD} && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"]
 
   env = [
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
