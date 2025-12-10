@@ -515,8 +515,11 @@ resource "null_resource" "hive_init_schema" {
           --entrypoint /bin/bash \
           -v ${path.cwd}/generated/hive-site.xml:/opt/hive/conf/hive-site.xml \
           -v ${path.cwd}/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar \
+          -v ${path.cwd}/hive/core-site.xml:/opt/hive/conf/core-site.xml \
           -e HIVE_CONF_DIR=/opt/hive/conf \
           -e HADOOP_CLIENT_OPTS='-Xmx2G' \
+          -e MINIO_ACCESS_KEY=${var.MINIO_ACCESS_KEY} \
+          -e MINIO_SECRET_KEY=${var.MINIO_SECRET_KEY} \
           apache/hive:4.1.0 \
           -c "/opt/hive/bin/schematool -dbType postgres -initSchema"
           
