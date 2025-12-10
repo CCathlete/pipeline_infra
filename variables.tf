@@ -148,3 +148,13 @@ variable "ollama_models_to_pull" {
   type        = list(string)
   default     = ["llama3", "nomic-embed-text", "gemma2"]
 }
+
+variable "MINIO_ACCESS_KEY" {
+  description = "Username for minio."
+  type        = string
+}
+
+variable "MINIO_SECRET_KEY" {
+  description = "Password for minio."
+  type        = string
+}

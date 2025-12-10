@@ -1,0 +1,39 @@
+<configuration>
+    <!-- Default FS: Hive warehouse main bucket -->
+    <property>
+        <name>fs.defaultFS</name>
+        <value>s3a://hive-warehouse/</value>
+    </property>
+
+    <!-- Access/secret from environment variables -->
+    <property>
+        <name>fs.s3a.access.key</name>
+        <value>${MINIO_ACCESS_KEY}</value>
+    </property>
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <value>${MINIO_SECRET_KEY}</value>
+    </property>
+
+    <!-- MinIO endpoint -->
+    <property>
+        <name>fs.s3a.endpoint</name>
+        <value>http://minio:9000</value>
+    </property>
+
+    <!-- Path style access for MinIO -->
+    <property>
+        <name>fs.s3a.path.style.access</name>
+        <value>true</value>
+    </property>
+
+    <!-- Optional tuning -->
+    <property>
+        <name>fs.s3a.connection.maximum</name>
+        <value>100</value>
+    </property>
+    <property>
+        <name>fs.s3a.fast.upload</name>
+        <value>true</value>
+    </property>
+</configuration>

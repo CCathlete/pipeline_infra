@@ -322,8 +322,8 @@ resource "docker_container" "minio" {
     external = 9001
   }
   env = [
-    "MINIO_ROOT_USER=minioadmin",
-    "MINIO_ROOT_PASSWORD=minioadminpassword",
+    "MINIO_ROOT_USER=${var.MINIO_ACCESS_KEY}",
+    "MINIO_ROOT_PASSWORD=${var.MINIO_SECRET_KEY}",
   ]
   command = ["server", "/data", "--console-address", ":9001"]
   volumes {
