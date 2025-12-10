@@ -577,7 +577,7 @@ resource "docker_container" "superset_init" {
     "/bin/bash",
     "-c",
     <<-EOT
-      pip install trino
+      pip install trino sqlalchemy-trino
       superset db upgrade 
       superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD}
       superset init
