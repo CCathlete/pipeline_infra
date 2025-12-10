@@ -412,7 +412,7 @@ resource "docker_container" "trino" {
     aliases = ["trino"]
   }
   restart    = "unless-stopped"
-  depends_on = [docker_container.minio, docker_container.hive_metastore]
+  depends_on = [docker_container.minio, docker_container.hive-metastore]
 }
 
 # Ollama Initializer
@@ -533,8 +533,8 @@ resource "null_resource" "hive_init_schema" {
 
 
 # Hive Metastore Service
-resource "docker_container" "hive_metastore" {
-  name    = "hive_metastore"
+resource "docker_container" "hive-metastore" {
+  name    = "hive-metastore"
   image   = "apache/hive:4.1.0"
   restart = "unless-stopped"
 
@@ -562,7 +562,7 @@ resource "docker_container" "hive_metastore" {
 
   networks_advanced {
     name    = docker_network.my_shared_network.name
-    aliases = ["hive_metastore"]
+    aliases = ["hive-metastore"]
   }
 
   depends_on = [null_resource.hive_init_schema]
@@ -601,7 +601,7 @@ resource "docker_container" "superset_init" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.hive_metastore, docker_container.postgres_metadata]
+  depends_on = [docker_container.hive-metastore, docker_container.postgres_metadata]
 
   provisioner "local-exec" {
     when    = destroy
