@@ -527,7 +527,7 @@ resource "null_resource" "hive_init_schema" {
           -v ${path.cwd}/generated/hive-site.xml:/opt/hive/conf/hive-site.xml \
           -v ${path.cwd}/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar \
           -v ${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar:/opt/hive/lib/aws-java-sdk-bundle-1.11.1026.jar \
-          -v ${path.cwd}/hive/hadoop-aws-3.4.2.jar:/opt/hive/lib/hadoop-aws-3.4.2.jar \
+          -v ${path.cwd}/hive/hadoop-aws-3.3.3.jar:/opt/hive/lib/hadoop-aws-3.3.3.jar \
           -v ${path.cwd}/generated/core-site.xml:/opt/hive/conf/core-site.xml \
           -e HIVE_CONF_DIR=/opt/hive/conf \
           -e HADOOP_CLIENT_OPTS='-Xmx2G' \
@@ -577,8 +577,16 @@ resource "docker_container" "hive-metastore" {
     container_path = "/opt/hive/lib/aws-java-sdk-bundle-1.11.1026.jar"
   }
   volumes {
-    host_path      = "${path.cwd}/hive/hadoop-aws-3.4.2.jar"
-    container_path = "/opt/hive/lib/hadoop-aws-3.4.2.jar"
+    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
+    container_path = "/opt/hive/lib/hadoop-aws-3.3.3.jar"
+  }
+  volumes {
+    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
+    container_path = "/opt/hadoop/share/hadoop/common/lib/aws-java-sdk-bundle-1.11.1026.jar"
+  }
+  volumes {
+    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
+    container_path = "/opt/hadoop/share/hadoop/common/lib/hadoop-aws-3.3.3.jar"
   }
 
   env = [
