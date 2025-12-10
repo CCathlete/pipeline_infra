@@ -1,6 +1,6 @@
 # --------------------------------------------------------------------------
 # dataplatform.tf: Deploys the entire Airflow, Spark, Trino, Hive, Superset 
-# platform
+# platform with dedicated Metadata and Data PostgreSQL databases.
 # --------------------------------------------------------------------------
 
 terraform {
@@ -22,18 +22,22 @@ resource "docker_network" "my_shared_network" {
   lifecycle {
     # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
-
-    # Ensures Terraform doesn't get confused if the name property changes.
     ignore_changes = [
       name
     ]
   }
 }
 
-resource "docker_volume" "postgres_data" {
-  name = "postgres_data"
+resource "docker_volume" "postgres_data_metadata" {
+  name = "postgres_data_metadata"
   lifecycle {
-    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
+}
+
+resource "docker_volume" "postgres_data_domain" {
+  name = "postgres_data_domain"
+  lifecycle {
     prevent_destroy = true
   }
 }
@@ -41,7 +45,6 @@ resource "docker_volume" "postgres_data" {
 resource "docker_volume" "ollama_models" {
   name = "ollama_models"
   lifecycle {
-    # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
   }
 }
@@ -49,7 +52,6 @@ resource "docker_volume" "ollama_models" {
 resource "docker_volume" "minio_data" {
   name = "minio_data"
   lifecycle {
-    # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
   }
 }
@@ -57,7 +59,6 @@ resource "docker_volume" "minio_data" {
 resource "docker_volume" "spark_events" {
   name = "spark_events"
   lifecycle {
-    # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
   }
 }
@@ -65,42 +66,52 @@ resource "docker_volume" "spark_events" {
 resource "docker_volume" "sqlite_data" {
   name = "sqlite_data"
   lifecycle {
-    # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
   }
 }
 
-# --- Custom Images ---
-# None at the moment.
-
 # --- Local Variables ---
-# Airflow Common Environment (used by multiple services)
 locals {
+  # New Service Hostnames for internal Docker network
+  postgres_metadata_host = "postgres_metadata_db"
+  postgres_data_host     = "postgres_data_db"
+
+  # Airflow Common Environment (now points to the Metadata DB using new variables)
   airflow_env = [
     "AIRFLOW_UID=${var.AIRFLOW_UID}",
     "AIRFLOW_GID=${var.AIRFLOW_GID}",
     "AIRFLOW_HOME=/opt/airflow",
     "AIRFLOW__CORE__EXECUTOR=LocalExecutor",
-    "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
+    # CRITICAL: Airflow connects to the dedicated Metadata DB
+    "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
     "AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077",
     "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://minio:9000', 'login': 'minioadmin', 'password': 'minioadminpassword', 'extra': {'aws_access_key_id': 'minioadmin', 'aws_secret_access_key': 'minioadminpassword', 'endpoint_url': 'http://minio:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
-    "POSTGRES_USER=${var.POSTGRES_USER}",
-    "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
-    "POSTGRES_DB=${var.POSTGRES_DB}",
-    "POSTGRES_HOST=${var.POSTGRES_HOST}",
+
+    # Exposing Metadata DB connection details
+    "POSTGRES_USER=${var.POSTGRES_METADATA_USER}",
+    "POSTGRES_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+    "POSTGRES_DB=${var.POSTGRES_METADATA_DB}",
+    "POSTGRES_HOST=${local.postgres_metadata_host}",
+
+    # Exposing Data DB connection details for use inside DAGs
+    "POSTGRES_DOMAIN_DATA_HOST=${local.postgres_data_host}",
+    "POSTGRES_DOMAIN_DATA_PORT=5432", # Internal port
+    "POSTGRES_DOMAIN_DATA_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
+    "POSTGRES_DOMAIN_DATA_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
+    "POSTGRES_DOMAIN_DATA_DB=${var.POSTGRES_DOMAIN_DATA_DB}",
   ]
 
   hive_site_xml = templatefile(
     "${path.cwd}/hive/hive-site.xml.tmpl",
     {
-      postgres_host = docker_container.postgres.name
-      # postgres_host     = "172.17.0.1"
+      # CRITICAL: Hive Metastore connects to the dedicated Metadata DB
+      postgres_host     = local.postgres_metadata_host
       postgres_port     = 5432
-      postgres_db       = var.POSTGRES_DB
-      postgres_user     = var.POSTGRES_USER
-      postgres_password = var.POSTGRES_PASSWORD
+      postgres_db       = var.POSTGRES_METADATA_DB
+      postgres_user     = var.POSTGRES_METADATA_USER
+      postgres_password = var.POSTGRES_METADATA_PASSWORD
     }
   )
 
@@ -141,26 +152,24 @@ resource "local_file" "hive_site_rendered" {
   filename = "${path.cwd}/generated/hive-site.xml"
 }
 
-
-
 # --- Service Containers ---
 
-# 5. PostgreSQL
-resource "docker_container" "postgres" {
-  name  = var.POSTGRES_HOST
+# 5. PostgreSQL Metadata DB (For Airflow/Superset/Hive Schemas)
+resource "docker_container" "postgres_metadata" {
+  name  = local.postgres_metadata_host
   image = "postgres:16-alpine"
   ports {
     internal = 5432
-    external = var.POSTGRES_PORT
+    external = var.POSTGRES_METADATA_PORT
   }
   env = [
-    "POSTGRES_USER=${var.POSTGRES_USER}",
-    "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
-    "POSTGRES_DB=${var.POSTGRES_DB}",
+    "POSTGRES_USER=${var.POSTGRES_METADATA_USER}",
+    "POSTGRES_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+    "POSTGRES_DB=${var.POSTGRES_METADATA_DB}",
     "PGDATA=/var/lib/postgresql/data/pgdata",
   ]
   volumes {
-    volume_name    = docker_volume.postgres_data.name
+    volume_name    = docker_volume.postgres_data_metadata.name
     container_path = "/var/lib/postgresql/data"
   }
   networks_advanced {
@@ -169,18 +178,43 @@ resource "docker_container" "postgres" {
   restart = "unless-stopped"
 }
 
+# 6. PostgreSQL Data DB (For Domain-Specific Production Data)
+resource "docker_container" "postgres_data" {
+  name  = local.postgres_data_host
+  image = "postgres:16-alpine"
+  ports {
+    internal = 5432
+    external = var.POSTGRES_DOMAIN_DATA_PORT # Exposed on new port
+  }
+  env = [
+    "POSTGRES_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
+    "POSTGRES_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
+    "POSTGRES_DB=${var.POSTGRES_DOMAIN_DATA_DB}",
+    "PGDATA=/var/lib/postgresql/data/pgdata",
+  ]
+  volumes {
+    volume_name    = docker_volume.postgres_data_domain.name
+    container_path = "/var/lib/postgresql/data"
+  }
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart = "unless-stopped"
+}
+
+
 # Airflow Initializer
 resource "docker_container" "airflow_init" {
   name  = "airflow_init"
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Postgres at ${var.POSTGRES_HOST}:5432..."
-    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h ${var.POSTGRES_HOST} -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
-      echo "Postgres is unavailable - sleeping"
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1; do
+      echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
     done
-    echo "Postgres is ready! Starting Airflow process..."
+    echo "Metadata Postgres is ready! Starting Airflow process..."
     airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
   EOT
   ]
@@ -199,7 +233,7 @@ resource "docker_container" "airflow_init" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.postgres]
+  depends_on = [docker_container.postgres_metadata]
 }
 
 # Airflow Webserver
@@ -208,12 +242,12 @@ resource "docker_container" "airflow_webserver" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Postgres at ${var.POSTGRES_HOST}:5432..."
-    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h ${var.POSTGRES_HOST} -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
-      echo "Postgres is unavailable - sleeping"
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1; do
+      echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
     done
-    echo "Postgres is ready! Starting Airflow process..."
+    echo "Metadata Postgres is ready! Starting Airflow process..."
     airflow webserver
   EOT
   ]
@@ -237,7 +271,7 @@ resource "docker_container" "airflow_webserver" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio]
+  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio, docker_container.postgres_metadata]
 }
 
 # Airflow Scheduler
@@ -246,12 +280,12 @@ resource "docker_container" "airflow_scheduler" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Postgres at ${var.POSTGRES_HOST}:5432..."
-    until PGPASSWORD=${var.POSTGRES_PASSWORD} psql -h ${var.POSTGRES_HOST} -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c 'select 1' > /dev/null 2>&1; do
-      echo "Postgres is unavailable - sleeping"
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1; do
+      echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
     done
-    echo "Postgres is ready! Starting Airflow process..."
+    echo "Metadata Postgres is ready! Starting Airflow process..."
     airflow scheduler
   EOT
   ]
@@ -271,7 +305,7 @@ resource "docker_container" "airflow_scheduler" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio]
+  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio, docker_container.postgres_metadata]
 }
 
 # MinIO Service
@@ -456,17 +490,17 @@ resource "docker_container" "sqlite" {
 # Hive schema initialization (Runs before the main Metastore service)
 resource "null_resource" "hive_init_schema" {
   depends_on = [
-    docker_container.postgres,
+    docker_container.postgres_metadata,
     local_file.hive_site_rendered,
   ]
 
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command     = <<-EOT
-      echo "Waiting for Postgres at ${docker_container.postgres.name}:5432..."
+      echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
       
-      # Loop until psql command succeeds. Output is now shown for better debugging.
-      until docker exec ${docker_container.postgres.name} psql -U ${var.POSTGRES_USER} -d ${var.POSTGRES_DB} -c "SELECT 'Running this from within postgres';" ; do
+      # Loop until psql command succeeds.
+      until docker exec ${local.postgres_metadata_host} psql -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c "SELECT 'Running this from within postgres';" ; do
         echo "Postgres is not accepting connections yet... sleeping"
         sleep 2
       done
@@ -498,8 +532,9 @@ resource "null_resource" "hive_init_schema" {
 
 # Hive Metastore Service
 resource "docker_container" "hive_metastore" {
-  name  = "hive_metastore"
-  image = "apache/hive:4.1.0"
+  name    = "hive_metastore"
+  image   = "apache/hive:4.1.0"
+  restart = "unless-stopped"
 
   ports {
     internal = 9083
@@ -549,7 +584,8 @@ resource "docker_container" "superset_init" {
   ]
 
   env = [
-    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
+    # CRITICAL: Superset connects to the Metadata DB
+    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
     "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
     "SUPERSET_ADMIN_PASSWORD=${var.SUPERSET_ADMIN_PASSWORD}",
     "SUPERSET_ADMIN_EMAIL=${var.SUPERSET_ADMIN_EMAIL}",
@@ -562,9 +598,8 @@ resource "docker_container" "superset_init" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.hive_metastore, docker_container.postgres]
+  depends_on = [docker_container.hive_metastore, docker_container.postgres_metadata]
 
-  # must_run = false
   provisioner "local-exec" {
     when    = destroy
     command = "docker logs ${self.name} || true"
@@ -573,8 +608,9 @@ resource "docker_container" "superset_init" {
 
 # Superset Webserver Service
 resource "docker_container" "superset" {
-  name  = "superset_app"
-  image = var.SUPERSET_IMAGE_NAME
+  name    = "superset_app"
+  image   = var.SUPERSET_IMAGE_NAME
+  restart = "unless-stopped"
 
   ports {
     internal = 8088
@@ -583,7 +619,8 @@ resource "docker_container" "superset" {
   env = [
     "SUPERSET_LOAD_EXAMPLES=false",
     "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
-    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
+    # CRITICAL: Superset connects to the Metadata DB
+    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
   ]
   volumes {
     volume_name    = docker_volume.sqlite_data.name
@@ -592,20 +629,22 @@ resource "docker_container" "superset" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.superset_init, docker_container.postgres]
+  depends_on = [docker_container.superset_init, docker_container.postgres_metadata]
 }
 
 # --- Outputs ---
 
 output "data_platform_access" {
-  description = "Connection URLs for the main services."
+  description = "Connection URLs for the main services and databases."
   value = {
-    airflow_webserver = "http://localhost:8080"
-    superset_ui       = "http://localhost:8088"
-    spark_master_ui   = "http://localhost:8081"
-    trino_ui          = "http://localhost:8082"
-    minio_console     = "http://localhost:9001"
-    ollama_api        = "http://localhost:11434"
+    airflow_webserver    = "http://localhost:8080"
+    superset_ui          = "http://localhost:8088"
+    spark_master_ui      = "http://localhost:8081"
+    trino_ui             = "http://localhost:8082"
+    minio_console        = "http://localhost:9001"
+    ollama_api           = "http://localhost:11434"
+    postgres_metadata_db = "localhost:${var.POSTGRES_METADATA_PORT}"
+    postgres_data_db     = "localhost:${var.POSTGRES_DOMAIN_DATA_PORT}"
   }
 }
 
@@ -616,6 +655,9 @@ output "initial_credentials" {
     airflow_password  = var._AIRFLOW_WWW_USER_PASSWORD
     superset_user     = var.SUPERSET_ADMIN_USERNAME
     superset_password = var.SUPERSET_ADMIN_PASSWORD
+    # Domain Data DB credentials
+    domain_data_user     = var.POSTGRES_DOMAIN_DATA_USER
+    domain_data_password = var.POSTGRES_DOMAIN_DATA_PASSWORD
   }
   sensitive = true
 }

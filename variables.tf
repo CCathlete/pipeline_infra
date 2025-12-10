@@ -3,32 +3,64 @@
 # --------------------------------------------------------------------------
 
 # PostgreSQL Credentials (Airflow/Superset Metadata DB)
-variable "POSTGRES_USER" {
+variable "POSTGRES_METADATA_USER" {
   description = "PostgreSQL user for Airflow metadata DB."
   type        = string
   default     = "airflow"
 }
 
-variable "POSTGRES_PASSWORD" {
+variable "POSTGRES_METADATA_PASSWORD" {
   description = "PostgreSQL password for Airflow metadata DB."
   type        = string
   sensitive   = true
   default     = "airflow"
 }
 
-variable "POSTGRES_DB" {
+variable "POSTGRES_METADATA_DB" {
   description = "PostgreSQL database name for Airflow metadata DB."
   type        = string
   default     = "airflow"
 }
 
-variable "POSTGRES_PORT" {
+variable "POSTGRES_METADATA_PORT" {
   description = "PostgreSQL exposed port."
   type        = number
   default     = 5432
 }
 
-variable "POSTGRES_HOST" {
+variable "POSTGRES_METADATA_HOST" {
+  description = "The name of the service that runs postgres."
+  type        = string
+  default     = "postgres"
+}
+
+# PostgreSQL Credentials for domain data.
+variable "POSTGRES_DOMAIN_DATA_USER" {
+  description = "PostgreSQL user for Airflow metadata DB."
+  type        = string
+  default     = "airflow"
+}
+
+variable "POSTGRES_DOMAIN_DATA_PASSWORD" {
+  description = "PostgreSQL password for Airflow metadata DB."
+  type        = string
+  sensitive   = true
+  default     = "airflow"
+}
+
+variable "POSTGRES_DOMAIN_DATA_DB" {
+  description = "PostgreSQL database name for Airflow metadata DB."
+  type        = string
+  default     = "airflow"
+}
+
+variable "POSTGRES_DOMAIN_DATA_PORT" {
+  description = "PostgreSQL exposed port."
+  type        = number
+  default     = 5432
+}
+
+variable "POSTGRES_DOMAIN_DATA_HOST" {
   description = "The name of the service that runs postgres."
   type        = string
   default     = "postgres"
