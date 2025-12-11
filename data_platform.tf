@@ -88,7 +88,7 @@ locals {
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
     "AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077",
-    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://minio:9000', 'login': 'minioadmin', 'password': 'minioadminpassword', 'extra': {'aws_access_key_id': 'minioadmin', 'aws_secret_access_key': 'minioadminpassword', 'endpoint_url': 'http://minio:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
+    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://minio-storage:9000', 'login': '${var.MINIO_ACCESS_KEY}', 'password': '${var.MINIO_SECRET_KEY}', 'extra': {'aws_access_key_id': '${var.MINIO_ACCESS_KEY}', 'aws_secret_access_key': '${var.MINIO_SECRET_KEY}', 'endpoint_url': 'http://minio-storage:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
 
     # Exposing Metadata DB connection details
     "POSTGRES_USER=${var.POSTGRES_METADATA_USER}",
@@ -322,7 +322,7 @@ resource "docker_container" "airflow_scheduler" {
 
 # MinIO Service
 resource "docker_container" "minio" {
-  name  = "minio_storage"
+  name  = "minio-storage"
   image = "minio/minio"
   ports {
     internal = 9000
