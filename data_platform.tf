@@ -222,11 +222,13 @@ resource "docker_container" "airflow_init" {
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1; do
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1';
+    do
       echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
     done
     echo "Metadata Postgres is ready! Starting Airflow process..."
+    pip install mypy_boto3_s3
     airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
   EOT
   ]
@@ -255,11 +257,13 @@ resource "docker_container" "airflow_webserver" {
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1; do
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+    do
       echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
     done
     echo "Metadata Postgres is ready! Starting Airflow process..."
+    pip install mypy_boto3_s3
     airflow webserver
   EOT
   ]
@@ -293,11 +297,13 @@ resource "docker_container" "airflow_scheduler" {
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1; do
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+    do
       echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
     done
     echo "Metadata Postgres is ready! Starting Airflow process..."
+    pip install mypy_boto3_s3
     airflow scheduler
   EOT
   ]
