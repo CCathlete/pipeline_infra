@@ -589,6 +589,10 @@ resource "docker_container" "hive-metastore" {
     host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
     container_path = "/opt/hadoop/share/hadoop/common/lib/hadoop-aws-3.3.3.jar"
   }
+  volumes {
+    host_path      = "${path.cwd}/hive/core-default.xml"
+    container_path = "/opt/hive/conf/core-default.xml"
+  }
 
   env = [
     "SERVICE_NAME=metastore",
