@@ -530,6 +530,7 @@ resource "null_resource" "hive_init_schema" {
           -v ${path.cwd}/hive/hadoop-aws-3.3.3.jar:/opt/hive/lib/hadoop-aws-3.3.3.jar \
           -v ${path.cwd}/generated/core-site.xml:/opt/hive/conf/core-site.xml \
           -e HIVE_CONF_DIR=/opt/hive/conf \
+          -e HADOOP_CONF_DIR=/opt/hive/conf \
           -e HADOOP_CLIENT_OPTS='-Xmx2G' \
           apache/hive:4.1.0 \
           -c "/opt/hive/bin/schematool -dbType postgres -initSchema"
@@ -592,6 +593,8 @@ resource "docker_container" "hive-metastore" {
   env = [
     "SERVICE_NAME=metastore",
     "HIVE_EXECUTION_ENGINE=mr",
+    "HADOOP_CONF_DIR=/opt/hive/conf",
+    "HIVE_CONF_DIR=/opt/hive/conf",
   ]
 
   networks_advanced {

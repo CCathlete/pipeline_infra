@@ -23,5 +23,250 @@
     <name>hive.metastore.warehouse.dir</name>
     <value>s3a://hive-warehouse/</value>
   </property>
+    <property>
+    <name>hive.repl.retry.initial.delay</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Initial Delay before retry starts.
+    </description>
+  </property>
+  <property>
+    <name>hive.lock.sleep.between.retries</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      The time should be in between 0 sec (exclusive) and 9223372036854775807 sec (exclusive).
+      The maximum sleep time between various retries
+    </description>
+  </property>
+  <property>
+    <name>hive.compactor.initiator.duration.update.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Time in seconds that drives the update interval of compaction_initiator_duration metric.
+      Smaller value results in a fine grained metric update.
+      This updater can be turned off if its value less than or equals to zero.
+      In this case the above metric will be update only after the initiator completed one cycle.
+      The hive.compactor.initiator.on must be turned on (true) in-order to enable the Initiator,
+      otherwise this setting has no effect.
+    </description>
+  </property>
+  <property>
+    <name>hive.compactor.cleaner.duration.update.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Time in seconds that drives the update interval of compaction_cleaner_duration metric.
+      Smaller value results in a fine grained metric update.
+      This updater can be turned off if its value less than or equals to zero.
+      In this case the above metric will be update only after the cleaner completed one cycle.
+    </description>
+  </property>
+  <property>
+    <name>hive.writeset.reaper.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is msec if not specified.
+      Frequency of WriteSet reaper runs
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.sleep.interval.between.start.attempts</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is msec if not specified.
+      The time should be in between 0 msec (inclusive) and 9223372036854775807 msec (inclusive).
+      Amount of time to sleep between HiveServer2 start attempts. Primarily meant for tests
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.operation.log.purgePolicy.timeToLive</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Number of seconds the appender, which has been dynamically created by Log4J framework for the operation log, should survive without having any events sent to it. For more details, check Log4J's IdlePurgePolicy.
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.thrift.http.worker.keepalive.time</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Keepalive time for an idle http worker thread. When the number of workers exceeds min workers, excessive threads are killed after this time interval.
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.thrift.worker.keepalive.time</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Keepalive time (in seconds) for an idle worker thread. When the number of workers exceeds min workers, excessive threads are killed after this time interval.
+    </description>
+  </property>
+  <property>
+    <name>hive.llap.task.scheduler.timeout.seconds</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Amount of time to wait before failing the query when there are no llap daemons running
+      (alive) in the cluster.
+    </description>
+  </property>
+  <property>
+    <name>hive.llap.daemon.service.refresh.interval.sec</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      LLAP YARN registry service list refresh delay, in seconds.
+    </description>
+  </property>
+  <property>
+    <name>hive.scheduled.queries.executor.idle.sleep.time</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Time to sleep between querying for the presence of a scheduled query.
+    </description>
+  </property>
+  <property>
+    <name>hive.scheduled.queries.executor.progress.report.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      While scheduled queries are in flight; a background update happens periodically to report the actual state of the query
+    </description>
+  </property>
+  <property>
+    <name>hive.notification.event.poll.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      How often the notification log is polled for new NotificationEvents from the metastore.A nonpositive value means the notification log is never polled.
+    </description>
+  </property>
+  <property>
+    <name>hive.repl.retry.initial.delay</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Initial Delay before retry starts.
+    </description>
+  </property>
+  <property>
+    <name>hive.lock.sleep.between.retries</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      The time should be in between 0 sec (exclusive) and 9223372036854775807 sec (exclusive).
+      The maximum sleep time between various retries
+    </description>
+  </property>
+  <property>
+    <name>hive.compactor.initiator.duration.update.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Time in seconds that drives the update interval of compaction_initiator_duration metric.
+      Smaller value results in a fine grained metric update.
+      This updater can be turned off if its value less than or equals to zero.
+      In this case the above metric will be update only after the initiator completed one cycle.
+      The hive.compactor.initiator.on must be turned on (true) in-order to enable the Initiator,
+      otherwise this setting has no effect.
+    </description>
+  </property>
+  <property>
+    <name>hive.compactor.cleaner.duration.update.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Time in seconds that drives the update interval of compaction_cleaner_duration metric.
+      Smaller value results in a fine grained metric update.
+      This updater can be turned off if its value less than or equals to zero.
+      In this case the above metric will be update only after the cleaner completed one cycle.
+    </description>
+  </property>
+  <property>
+    <name>hive.writeset.reaper.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is msec if not specified.
+      Frequency of WriteSet reaper runs
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.sleep.interval.between.start.attempts</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is msec if not specified.
+      The time should be in between 0 msec (inclusive) and 9223372036854775807 msec (inclusive).
+      Amount of time to sleep between HiveServer2 start attempts. Primarily meant for tests
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.operation.log.purgePolicy.timeToLive</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Number of seconds the appender, which has been dynamically created by Log4J framework for the operation log, should survive without having any events sent to it. For more details, check Log4J's IdlePurgePolicy.
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.thrift.http.worker.keepalive.time</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Keepalive time for an idle http worker thread. When the number of workers exceeds min workers, excessive threads are killed after this time interval.
+    </description>
+  </property>
+  <property>
+    <name>hive.server2.thrift.worker.keepalive.time</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Keepalive time (in seconds) for an idle worker thread. When the number of workers exceeds min workers, excessive threads are killed after this time interval.
+    </description>
+  </property>
+  <property>
+    <name>hive.llap.task.scheduler.timeout.seconds</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Amount of time to wait before failing the query when there are no llap daemons running
+      (alive) in the cluster.
+    </description>
+  </property>
+  <property>
+    <name>hive.llap.daemon.service.refresh.interval.sec</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      LLAP YARN registry service list refresh delay, in seconds.
+    </description>
+  </property>
+  <property>
+    <name>hive.scheduled.queries.executor.idle.sleep.time</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      Time to sleep between querying for the presence of a scheduled query.
+    </description>
+  </property>
+  <property>
+    <name>hive.notification.event.poll.interval</name>
+    <value>6000</value>
+    <description>
+      NOT IN CURRENT VERSION - Expects a time value with unit (d/day, h/hour, m/min, s/sec, ms/msec, us/usec, ns/nsec), which is sec if not specified.
+      How often the notification log is polled for new NotificationEvents from the metastore.A nonpositive value means the notification log is never polled.
+    </description>
+  </property>
+
+
+
+
+
+
+
 
 </configuration>
