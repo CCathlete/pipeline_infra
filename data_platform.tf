@@ -710,7 +710,9 @@ resource "docker_container" "kafka" {
     "KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
     "KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT",
     "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
-    "KAFKA_CLUSTER_ID=MkU3OEVBNTcwNTJDRDRCMz", # Required for KRaft
+    # The image script specifically looks for CLUSTER_ID without the KAFKA_ prefix in some versions
+    "CLUSTER_ID=MkU3OEVBNTcwNTJDRDRCMz",
+    "KAFKA_LOG_DIRS=/var/lib/kafka/data"
   ]
 
   volumes {
@@ -732,7 +734,7 @@ resource "docker_container" "kafka_ui" {
 
   ports {
     internal = 8080
-    external = 8083 # Changed from 8080 because Airflow uses 8080
+    external = 8083
   }
 
   env = [
@@ -760,7 +762,7 @@ output "data_platform_access" {
     postgres_metadata_db = "localhost:${var.POSTGRES_METADATA_PORT}"
     postgres_data_db     = "localhost:${var.POSTGRES_DOMAIN_DATA_PORT}"
     kafka_ui             = "http://localhost:8083"
-    kafka_broker         = "localhost:9092"
+    kafka_broker         = "http://localhost:9092"
   }
 }
 
