@@ -71,6 +71,14 @@ resource "docker_volume" "sqlite_data" {
   }
 }
 
+# --- Kafka Storage ---
+resource "docker_volume" "kafka_data" {
+  name = "kafka_data"
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 # --- Local Variables ---
 locals {
   # New Service Hostnames for internal Docker network
@@ -682,6 +690,62 @@ resource "docker_container" "superset" {
   depends_on = [docker_container.superset_init, docker_container.postgres_metadata]
 }
 
+# --- Kafka Broker (KRaft Mode) ---
+resource "docker_container" "kafka" {
+  name  = "kafka_broker"
+  image = "confluentinc/cp-kafka:7.5.0"
+
+  ports {
+    internal = 9092
+    external = 9092
+  }
+
+  env = [
+    "KAFKA_NODE_ID=1",
+    "KAFKA_PROCESS_ROLES=broker,controller",
+    "KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093",
+    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka_broker:9092,PLAINTEXT_HOST://localhost:9092",
+    "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT",
+    "KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka_broker:9093",
+    "KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
+    "KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT",
+    "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
+    "KAFKA_CLUSTER_ID=MkU3OEVBNTcwNTJDRDRCMz", # Required for KRaft
+  ]
+
+  volumes {
+    volume_name    = docker_volume.kafka_data.name
+    container_path = "/var/lib/kafka/data"
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+
+  restart = "unless-stopped"
+}
+
+# --- Kafka Web UI (Redpanda Console) ---
+resource "docker_container" "kafka_ui" {
+  name  = "kafka_ui"
+  image = "redpandadata/console:latest"
+
+  ports {
+    internal = 8080
+    external = 8083 # Changed from 8080 because Airflow uses 8080
+  }
+
+  env = [
+    "KAFKA_BROKERS=kafka_broker:9092"
+  ]
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+
+  depends_on = [docker_container.kafka]
+}
+
 # --- Outputs ---
 
 output "data_platform_access" {
@@ -695,6 +759,8 @@ output "data_platform_access" {
     ollama_api           = "http://localhost:11434"
     postgres_metadata_db = "localhost:${var.POSTGRES_METADATA_PORT}"
     postgres_data_db     = "localhost:${var.POSTGRES_DOMAIN_DATA_PORT}"
+    kafka_ui             = "http://localhost:8083"
+    kafka_broker         = "localhost:9092"
   }
 }
 
