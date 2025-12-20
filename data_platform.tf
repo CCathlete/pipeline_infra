@@ -201,7 +201,8 @@ resource "docker_container" "postgres_metadata" {
 # 6. PostgreSQL Data DB (For Domain-Specific Production Data)
 resource "docker_container" "postgres_data" {
   name  = local.postgres_data_host
-  image = "postgres:16-alpine"
+  # image = "postgres:16-alpine"
+  image = "pgvector/pgvector:pg16"
   ports {
     internal = 5432
     external = var.POSTGRES_DOMAIN_DATA_PORT # Exposed on new port
@@ -695,9 +696,16 @@ resource "docker_container" "kafka" {
   name  = "kafka_broker"
   image = "confluentinc/cp-kafka:7.5.0"
 
+  # Connecting from the inner network (other containers).
   ports {
     internal = 9092
     external = 9092
+  }
+
+  # Connecting from host.
+  ports {
+    internal = 29092
+    external = 29092
   }
 
   env = [
@@ -705,7 +713,7 @@ resource "docker_container" "kafka" {
     "KAFKA_PROCESS_ROLES=broker,controller",
     # Listeners: 9092 for internal Docker, 29092 for your laptop, 9093 for Controller
     "KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093",
-    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka_broker:9092,PLAINTEXT_HOST://localhost:9092",
+    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka_broker:9092,PLAINTEXT_HOST://localhost:29092",
     "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT",
     "KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka_broker:9093",
     "KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
