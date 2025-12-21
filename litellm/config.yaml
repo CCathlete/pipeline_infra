@@ -27,6 +27,12 @@ model_list:
     api_key: "os.environ/GITHUB_TOKEN"
     api_base: "https://models.inference.ai.azure.com"
 
+- model_name: gpt-4-1-mini
+  litellm_params:
+    model: github/gpt-4.1-mini
+    api_key: "os.environ/GITHUB_TOKEN"
+    api_base: "https://models.inference.ai.azure.com"
+
 - model_name: gemini
   litellm_params:
     model: huggingface/google/gemma-2-27b-it # Example gemma/gemini via HF
