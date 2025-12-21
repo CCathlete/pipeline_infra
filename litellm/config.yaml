@@ -9,10 +9,23 @@ model_list:
 #     model: anthropic/claude-3-5-sonnet-20240620
 #     api_key: "os.environ/ANTHROPIC_API_KEY"
 
-- model_name: llama3
+- model_name: llama
   litellm_params:
-    model: github/meta/Llama-4-Scout-17B-16E-Instruct
+    model: github/Llama-4-Scout-17B-16E-Instruct
     api_key: "os.environ/GITHUB_TOKEN"
+    api_base: "https://models.inference.ai.azure.com"
+
+- model_name: ms-phi
+  litellm_params:
+    model: github/Phi-4-reasoning
+    api_key: "os.environ/GITHUB_TOKEN"
+    api_base: "https://models.inference.ai.azure.com"
+
+- model_name: ministral-3b
+  litellm_params:
+    model: github/Ministral-3B
+    api_key: "os.environ/GITHUB_TOKEN"
+    api_base: "https://models.inference.ai.azure.com"
 
 - model_name: gemini
   litellm_params:
