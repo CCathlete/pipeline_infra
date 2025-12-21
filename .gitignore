@@ -218,3 +218,4 @@ __marimo__/
 **/*hive*.xml
 **/generated
 **/*.jar
+**/*.tfstate*
