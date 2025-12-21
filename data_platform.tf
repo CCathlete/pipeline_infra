@@ -788,7 +788,6 @@ resource "docker_container" "litellm" {
       "LITELLM_MASTER_KEY=${var.LITELLM_MASTER_KEY}",
       "UI_USERNAME=${var.LITELLM_ADMIN_USERNAME}",
       "UI_PASSWORD=${var.LITELLM_ADMIN_PASSWORD}",
-      "LITELLM_LOG=minimal"
     ],
     [for k, v in var.llm_api_keys : "${k}=${v}"]
   )
