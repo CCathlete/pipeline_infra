@@ -788,6 +788,8 @@ resource "docker_container" "litellm" {
       "LITELLM_MASTER_KEY=${var.LITELLM_MASTER_KEY}",
       "UI_USERNAME=${var.LITELLM_ADMIN_USERNAME}",
       "UI_PASSWORD=${var.LITELLM_ADMIN_PASSWORD}",
+      "DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${local.postgres_data_host}:5432/${var.POSTGRES_DOMAIN_DATA_DB}",
+      "LITELLM_SALT_KEY=${var.LITELLM_SALT_KEY}",
     ],
     [for k, v in var.llm_api_keys : "${k}=${v}"]
   )
@@ -795,6 +797,7 @@ resource "docker_container" "litellm" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
+  depends_on = [docker_container.postgres_data]
 
   restart = "unless-stopped"
 }

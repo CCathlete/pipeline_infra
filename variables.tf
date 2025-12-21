@@ -186,3 +186,8 @@ variable "LITELLM_ADMIN_PASSWORD" {
   type      = string
   sensitive = true
 }
+
+variable "LITELLM_SALT_KEY" {
+  type      = string
+  sensitive = true
+}
