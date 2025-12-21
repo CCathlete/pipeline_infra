@@ -79,6 +79,14 @@ resource "docker_volume" "kafka_data" {
   }
 }
 
+resource "docker_volume" "open_webui_data" {
+  name = "open_webui_data"
+  lifecycle {
+    # Keeps your prompts and history safe even if you terraform destroy
+    prevent_destroy = true
+  }
+}
+
 # --- Local Variables ---
 locals {
   # New Service Hostnames for internal Docker network
@@ -200,7 +208,7 @@ resource "docker_container" "postgres_metadata" {
 
 # 6. PostgreSQL Data DB (For Domain-Specific Production Data)
 resource "docker_container" "postgres_data" {
-  name  = local.postgres_data_host
+  name = local.postgres_data_host
   # image = "postgres:16-alpine"
   image = "pgvector/pgvector:pg16"
   ports {
@@ -755,6 +763,63 @@ resource "docker_container" "kafka_ui" {
   }
 
   depends_on = [docker_container.kafka]
+}
+
+# --- LiteLLM Proxy Service ---
+resource "docker_container" "litellm" {
+  name  = "litellm_proxy"
+  image = "ghcr.io/berriai/litellm:main-latest"
+
+  ports {
+    internal = 4000
+    external = 4000
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/litellm/config.yaml"
+    container_path = "/app/config.yaml"
+  }
+
+  # Ensure it uses the config and remains quiet for production logs
+  command = ["--config", "/app/config.yaml", "--port", "4000"]
+
+  env = [for k, v in var.llm_api_keys : "${k}=${v}"]
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+
+  restart = "unless-stopped"
+}
+
+# --- Open WebUI Service ---
+resource "docker_container" "open_webui" {
+  name  = "open_webui"
+  image = "ghcr.io/open-webui/open-webui:main"
+
+  ports {
+    internal = 8080
+    external = 3000
+  }
+
+  env = [
+    "OPENAI_API_BASE_URL=http://litellm_proxy:4000/v1",
+    "OPENAI_API_KEY=sk-not-required", # LiteLLM handles the real keys
+    "ENABLE_OLLAMA=false",
+    "WEBUI_SECRET_KEY=${var.OPEN_WEBUI_SECRET_KEY}"
+  ]
+
+  volumes {
+    volume_name    = docker_volume.open_webui_data.name
+    container_path = "/app/backend/data"
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+
+  restart    = "unless-stopped"
+  depends_on = [docker_container.litellm]
 }
 
 # --- Outputs ---

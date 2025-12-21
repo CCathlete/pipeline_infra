@@ -157,4 +157,16 @@ variable "MINIO_ACCESS_KEY" {
 variable "MINIO_SECRET_KEY" {
   description = "Password for minio."
   type        = string
+  sensitive   = true
+}
+
+variable "llm_api_keys" {
+  type        = map(string)
+  description = "A map of LLM API keys."
+  sensitive   = true
+}
+
+variable "OPEN_WEBUI_SECRET_KEY" {
+  type      = string
+  sensitive = true
 }

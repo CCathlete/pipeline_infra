@@ -1,0 +1,21 @@
+model_list:
+# - model_name: gpt-4
+#   litellm_params:
+#     model: openai/gpt-4o
+#     api_key: "os.environ/OPENAI_API_KEY"
+
+# - model_name: claude
+#   litellm_params:
+#     model: anthropic/claude-3-5-sonnet-20240620
+#     api_key: "os.environ/ANTHROPIC_API_KEY"
+
+- model_name: llama3
+  litellm_params:
+    model: github/meta-llama-3-70b-instruct
+    api_key: "os.environ/GITHUB_TOKEN"
+
+- model_name: gemini
+  litellm_params:
+    model: huggingface/google/gemma-2-27b-it # Example gemma/gemini via HF
+    api_key: "os.environ/HUGGINGFACE_API_KEY"
+    api_base: "https://api-inference.huggingface.co/models/google/gemma-2-27b-it"
