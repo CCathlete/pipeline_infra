@@ -146,7 +146,7 @@ variable "SUPERSET_IMAGE_NAME" {
 variable "ollama_models_to_pull" {
   description = "A list of Ollama model names to be pulled by the init container."
   type        = list(string)
-  default     = ["llama3", "nomic-embed-text", "gemma2"]
+  default     = ["llama3", "nomic-embed-text", "gemma2", "phi3:mini", "qwen2:0.5b"]
 }
 
 variable "MINIO_ACCESS_KEY" {
