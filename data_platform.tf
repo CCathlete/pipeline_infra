@@ -449,65 +449,65 @@ resource "docker_container" "trino" {
   depends_on = [docker_container.minio, docker_container.hive-metastore]
 }
 
-# Ollama Initializer
-resource "docker_container" "ollama_init" {
-  name  = "ollama_init"
-  image = "ollama/ollama:latest"
+# # Ollama Initializer
+# resource "docker_container" "ollama_init" {
+#   name  = "ollama_init"
+#   image = "ollama/ollama:latest"
 
-  entrypoint = ["/bin/sh"]
-  command = [
-    "-c",
-    <<-EOT
-      # Start server in background
-      ollama serve &
-      PID=$!
-      
-      # Wait for the server to fully start
-      sleep 5
-      
-      # Run all pull commands (ensuring success)
-      ${local.pull_commands_string}
-      
-      # Kill the background server process
-      kill $PID
-    EOT
-  ]
+#   entrypoint = ["/bin/sh"]
+#   command = [
+#     "-c",
+#     <<-EOT
+#       # Start server in background
+#       ollama serve &
+#       PID=$!
 
-  volumes {
-    volume_name    = docker_volume.ollama_models.name
-    container_path = "/root/.ollama"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  depends_on = [docker_volume.ollama_models]
-  must_run   = false
+#       # Wait for the server to fully start
+#       sleep 5
 
-  # Extracting logs if container is terminated.
-  provisioner "local-exec" {
-    when    = destroy
-    command = "docker logs ${self.name} || true"
-  }
-}
+#       # Run all pull commands (ensuring success)
+#       ${local.pull_commands_string}
 
-# Ollama Service
-resource "docker_container" "ollama" {
-  name  = "ollama_llm"
-  image = "ollama/ollama:latest"
-  ports {
-    internal = 11434
-    external = 11434
-  }
-  volumes {
-    volume_name    = docker_volume.ollama_models.name
-    container_path = "/root/.ollama"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  depends_on = [docker_container.ollama_init]
-  restart    = "unless-stopped"
-}
+#       # Kill the background server process
+#       kill $PID
+#     EOT
+#   ]
+
+#   volumes {
+#     volume_name    = docker_volume.ollama_models.name
+#     container_path = "/root/.ollama"
+#   }
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#   depends_on = [docker_volume.ollama_models]
+#   must_run   = false
+
+#   # Extracting logs if container is terminated.
+#   provisioner "local-exec" {
+#     when    = destroy
+#     command = "docker logs ${self.name} || true"
+#   }
+# }
+
+# # Ollama Service
+# resource "docker_container" "ollama" {
+#   name  = "ollama_llm"
+#   image = "ollama/ollama:latest"
+#   ports {
+#     internal = 11434
+#     external = 11434
+#   }
+#   volumes {
+#     volume_name    = docker_volume.ollama_models.name
+#     container_path = "/root/.ollama"
+#   }
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#   depends_on = [docker_container.ollama_init]
+#   restart    = "unless-stopped"
+# }
 
 # SQLite Service
 resource "docker_container" "sqlite" {
