@@ -170,3 +170,19 @@ variable "OPEN_WEBUI_SECRET_KEY" {
   type      = string
   sensitive = true
 }
+
+variable "LITELLM_MASTER_KEY" {
+  type      = string
+  sensitive = true
+  # Must start with sk-
+}
+
+variable "LITELLM_ADMIN_USERNAME" {
+  type    = string
+  default = "admin"
+}
+
+variable "LITELLM_ADMIN_PASSWORD" {
+  type      = string
+  sensitive = true
+}

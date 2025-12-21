@@ -783,7 +783,15 @@ resource "docker_container" "litellm" {
   # Ensure it uses the config and remains quiet for production logs
   command = ["--config", "/app/config.yaml", "--port", "4000"]
 
-  env = [for k, v in var.llm_api_keys : "${k}=${v}"]
+  env = concat(
+    [
+      "LITELLM_MASTER_KEY=${var.LITELLM_MASTER_KEY}",
+      "UI_USERNAME=${var.LITELLM_ADMIN_USERNAME}",
+      "UI_PASSWORD=${var.LITELLM_ADMIN_PASSWORD}",
+      "LITELLM_LOG=minimal"
+    ],
+    [for k, v in var.llm_api_keys : "${k}=${v}"]
+  )
 
   networks_advanced {
     name = docker_network.my_shared_network.name
