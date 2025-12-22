@@ -841,7 +841,7 @@ resource "docker_container" "ngrok" {
     container_path = "/etc/ngrok.yml"
   }
 
-  command = ["start", "--all", "--config", "/etc/ngrok/ngrok.yml"]
+  command = ["start", "--all", "--config", "/etc/ngrok.yml"]
 
   ports {
     internal = 4040
