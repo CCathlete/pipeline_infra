@@ -842,7 +842,7 @@ resource "docker_container" "ngrok" {
   }
 
   env = [
-    "NGROK_AUTH_TOKEN=${var.NGROK_AUTHTOKEN}"
+    "NGROK_AUTHTOKEN=${var.NGROK_AUTHTOKEN}"
   ]
 
 
