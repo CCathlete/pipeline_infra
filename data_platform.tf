@@ -837,8 +837,8 @@ resource "docker_container" "ngrok" {
   name  = "ngrok"
 
   volumes {
-    host_path      = "/ngrok/config.yaml"
-    container_path = "/etc/ngrok/ngrok.yml"
+    host_path      = "${path.cwd}/ngrok/config.yaml"
+    container_path = "/etc/ngrok.yml"
   }
 
   command = ["start", "--all", "--config", "/etc/ngrok/ngrok.yml"]
