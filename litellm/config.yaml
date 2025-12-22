@@ -40,12 +40,28 @@ model_list:
 
 - model_name: gpt-oss-20b
   litellm_params:
+    provider: huggingface
     model: "openai/gpt-oss-20b"
     api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co/v1/chat/completions"
+    api_base: "https://router.huggingface.co"
 
 - model_name: gpt-oss-120b
   litellm_params:
+    provider: huggingface
     model: "openai/gpt-oss-120b"
     api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co/v1/chat/completions"
+    api_base: "https://router.huggingface.co"
+
+- model_name: mistral-7b-instruct
+  litellm_params:
+    provider: huggingface
+    model: "mistralai/Mistral-7B-Instruct-v0.3"
+    api_key: "os.environ/HUGGINGFACE_TOKEN"
+    api_base: "https://router.huggingface.co"
+
+- model_name: qwen-7b-instruct
+  litellm_params:
+    provider: huggingface
+    model: "Qwen/Qwen2.5-7B-Instruct"
+    api_key: "os.environ/HUGGINGFACE_TOKEN"
+    api_base: "https://router.huggingface.co/v1"
