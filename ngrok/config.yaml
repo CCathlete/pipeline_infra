@@ -1,0 +1,7 @@
+tunnels:
+  openwebui:
+    proto: http
+    addr: 3000
+  dbexport-frontend:
+    proto: http
+    addr: 3001

@@ -832,6 +832,30 @@ resource "docker_container" "open_webui" {
   depends_on = [docker_container.litellm]
 }
 
+resource "docker_container" "ngrok" {
+  image = "ngrok/ngrok:latest"
+  name  = "ngrok"
+
+  volumes {
+    host_path      = "/ngrok/config.yaml"
+    container_path = "/etc/ngrok/ngrok.yml"
+  }
+
+  command = ["start", "--all", "--config", "/etc/ngrok/ngrok.yml"]
+
+  ports {
+    internal = 4040
+    external = 4040
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+
+  restart    = "unless-stopped"
+  depends_on = [docker_container.open_webui]
+}
+
 # --- Outputs ---
 
 output "data_platform_access" {

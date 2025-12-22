@@ -35,6 +35,6 @@ model_list:
 
 - model_name: gemini
   litellm_params:
-    model: huggingface/google/gemma-2-27b-it # Example gemma/gemini via HF
-    api_key: "os.environ/HUGGINGFACE_API_KEY"
-    api_base: "https://api-inference.huggingface.co/models/google/gemma-2-27b-it"
+    model: "gemini/gemini-2.0-flash"
+    api_key: "os.environ/GOOGLE_AI_STUDIO_API_KEY"
+    api_base: "https://generativelanguage.googleapis.com/v1beta/"
