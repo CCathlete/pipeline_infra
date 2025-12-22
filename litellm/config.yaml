@@ -38,26 +38,44 @@ model_list:
     model: "gemini/gemini-2.5-flash"
     api_key: "os.environ/GOOGLE_AI_STUDIO_API_KEY"
 
-- model_name: gpt-oss-20b
+- model_name: Olmo-3.1-32b-think
   litellm_params:
-    model: "huggingface/openai/gpt-oss-20b"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co"
+    model: "allenai/olmo-3.1-32b-think:free"
+    api_key: "os.environ/OPENROUTER_API_KEY"
+    api_base: "https://openrouter.ai"
 
-- model_name: gpt-oss-120b
+- model_name: xiaomi-mimo-v2-flash
   litellm_params:
-    model: "huggingface/openai/gpt-oss-120b"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co"
+    model: "xiaomi/mimo-v2-flash:free"
+    api_key: "os.environ/OPENROUTER_API_KEY"
+    api_base: "https://openrouter.ai"
 
-- model_name: mistral-7b-instruct
+- model_name: mistral-devstral
   litellm_params:
-    model: "huggingface/mistralai/Mistral-7B-Instruct-v0.3"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co"
+    model: "mistralai/devstral-2512:free"
+    api_key: "os.environ/OPENROUTER_API_KEY"
+    api_base: "https://openrouter.ai"
 
-- model_name: qwen-7b-instruct
+- model_name: nvidia-nemotron-3-nano
   litellm_params:
-    model: "huggingface/Qwen/Qwen2.5-7B-Instruct"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co/v1"
+    model: "nvidia/nemotron-3-nano-30b-a3b:free"
+    api_key: "os.environ/OPENROUTER_API_KEY"
+    api_base: "https://openrouter.ai"
+
+# - model_name: gpt-oss-20b
+#   litellm_params:
+#     model: "huggingface/openai/gpt-oss-20b"
+#     api_key: "os.environ/HUGGINGFACE_TOKEN"
+#     api_base: "https://router.huggingface.co"
+
+# - model_name: gpt-oss-120b
+#   litellm_params:
+#     model: "huggingface/openai/gpt-oss-120b"
+#     api_key: "os.environ/HUGGINGFACE_TOKEN"
+#     api_base: "https://router.huggingface.co"
+
+# - model_name: qwen-7b-instruct
+#   litellm_params:
+#     model: "huggingface/Qwen/Qwen2.5-7B-Instruct"
+#     api_key: "os.environ/HUGGINGFACE_TOKEN"
+#     api_base: "https://router.huggingface.co/v1"
