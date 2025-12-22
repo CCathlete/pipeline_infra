@@ -33,7 +33,7 @@ model_list:
     api_key: "os.environ/GITHUB_TOKEN"
     api_base: "https://models.inference.ai.azure.com"
 
-- model_name: gemini
+- model_name: gemini-2.5-flash
   litellm_params:
     model: "gemini/gemini-2.5-flash"
     api_key: "os.environ/GOOGLE_AI_STUDIO_API_KEY"

@@ -841,6 +841,11 @@ resource "docker_container" "ngrok" {
     container_path = "/etc/ngrok.yml"
   }
 
+  env = [
+    "NGROK_AUTH_TOKEN=${var.NGROK_AUTHTOKEN}"
+  ]
+
+
   command = ["start", "--all", "--config", "/etc/ngrok.yml"]
 
   ports {

@@ -191,3 +191,8 @@ variable "LITELLM_SALT_KEY" {
   type      = string
   sensitive = true
 }
+
+variable "NGROK_AUTHTOKEN" {
+  type      = string
+  sensitive = true
+}
