@@ -140,8 +140,7 @@ def run_monitor() -> None:
 
                     # Call the extracted function.
                     # It runs until it fails (e.g., API goes down) or we Ctrl+C.
-                    monitor_result = monitor_until_stopped(
-                        uris, uris.get("openwebui", ""))
+                    monitor_result = monitor_until_stopped(uris, "")
 
                     match monitor_result:
                         case Failure(error):
