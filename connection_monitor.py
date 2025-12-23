@@ -10,18 +10,20 @@ NGROK_API_URL = "http://localhost:4040/api/tunnels"
 # ---------------------
 
 
-def get_ngrok_url() -> Result[str, str]:
+def get_ngrok_url() -> Result[list[str], str]:
     """Queries ngrok API and returns Result with URL or error message."""
     try:
         response = requests.get(NGROK_API_URL, timeout=5)
         response.raise_for_status()
         data: dict[str, Any] = response.json()
 
-        tunnels = data.get('tunnels', [])
-        if not tunnels:
+        tunnel_list: list[dict[str, Any]] = data.get('tunnelListResource', [])
+        if not tunnel_list:
             return Failure("Ngrok API returned no active tunnels.")
 
-        return Success(tunnels[0].get('public_url', 'No public_url in response'))
+        uris: list[str] = [tunnel.get('URI', '') for tunnel in tunnel_list]
+
+        return Success(uris)
 
     except requests.exceptions.RequestException as e:
         return Failure(f"Ngrok API unreachable: {e}")
@@ -74,12 +76,12 @@ def run_monitor() -> None:
         current_url_result = get_ngrok_url()
 
         match current_url_result:
-            case Success(url):
-                print(f"Ngrok is active with URL: {url}")
-                chat_status = send_to_google_chat(url)
+            case Success(uris):
+                print(f"Ngrok is active with URLs: {uris}")
+                chat_status = send_to_google_chat('\n'.join(uris))
                 match chat_status:
                     case Success(_):
-                        print(f"URL sent to Google Chat: {url}")
+                        print(f"URLs sent to Google Chat: {uris}")
                         return  # Success, exit the loop
                     case Failure(err):
                         print(f"Failed to send to Google Chat: {err}")
@@ -96,10 +98,10 @@ def run_monitor() -> None:
                         print("Terraform reset successful.")
                         new_url_result = get_ngrok_url()
                         match new_url_result:
-                            case Success(new_url):
-                                send_to_google_chat(new_url)
+                            case Success(new_uris):
+                                send_to_google_chat('\n'.join(new_uris))
                                 print(
-                                    f"🔄 Reset complete. New URL sent to chat: {new_url}")
+                                    f"Reset complete. New URL sent to chat: {new_uris}")
                                 return  # Success, exit the loop
                             case Failure(post_reset_error):
                                 print(
