@@ -25,7 +25,7 @@ def get_ngrok_urls() -> Result[dict[str, str], str]:
         if not tunnel_list:
             return Failure("Ngrok API returned no active tunnels.")
         uris: dict[str, str] = {
-            tunnel.get('Name', ''): tunnel.get('URI', '') for tunnel in tunnel_list
+            tunnel.get('name', ''): tunnel.get('public_url', '') for tunnel in tunnel_list
         }
         return Success(uris)
     except requests.exceptions.RequestException as e:
