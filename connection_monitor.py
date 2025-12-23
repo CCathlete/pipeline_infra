@@ -21,7 +21,7 @@ def get_ngrok_urls() -> Result[dict[str, str], str]:
         response = requests.get(NGROK_API_URL, timeout=5)
         response.raise_for_status()
         data: dict[str, Any] = response.json()
-        tunnel_list: list[dict[str, Any]] = data.get('tunnelListResource', [])
+        tunnel_list: list[dict[str, Any]] = data.get('tunnels', [])
         if not tunnel_list:
             return Failure("Ngrok API returned no active tunnels.")
         uris: dict[str, str] = {
