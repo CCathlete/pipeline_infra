@@ -48,25 +48,21 @@ model_list:
   litellm_params:
     model: "openrouter/allenai/olmo-3.1-32b-think:free"
     api_key: "os.environ/OPENROUTER_API_KEY"
-    api_base: "https://openrouter.ai"
 
 - model_name: xiaomi-mimo-v2-flash
   litellm_params:
     model: "openrouter/xiaomi/mimo-v2-flash:free"
     api_key: "os.environ/OPENROUTER_API_KEY"
-    api_base: "https://openrouter.ai"
 
 - model_name: mistral-devstral
   litellm_params:
     model: "openrouter/mistralai/devstral-2512:free"
     api_key: "os.environ/OPENROUTER_API_KEY"
-    api_base: "https://openrouter.ai"
 
 - model_name: nvidia-nemotron-3-nano
   litellm_params:
     model: "openrouter/nvidia/nemotron-3-nano-30b-a3b:free"
     api_key: "os.environ/OPENROUTER_API_KEY"
-    api_base: "https://openrouter.ai"
 
 - model_name: gpt-oss-20b
   litellm_params:
