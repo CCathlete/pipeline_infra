@@ -1,12 +1,15 @@
+import os
 import time
 import requests
 import subprocess
 import structlog
+from dotenv import load_dotenv
 from typing import Any
 from returns.result import Result, Success, Failure
+load_dotenv()
 
 # --- Configuration ---
-WEBHOOK_URL = "YOUR_GOOGLE_CHAT_WEBHOOK_URL"
+WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 NGROK_API_URL = "http://localhost:4040/api/tunnels"
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 # ---------------------
@@ -44,9 +47,10 @@ def terraform_apply() -> Result[None, str]:
         return Failure(f"Terraform apply failed: {error_message}")
 
 
-def send_to_google_chat(message: str) -> Result[None, str]:
+def send_to_discord(message: str) -> Result[None, str]:
     """Sends a message to Google Chat."""
     try:
+        assert WEBHOOK_URL, "DISCORD_WEBHOOK_URL not set"
         response = requests.post(
             WEBHOOK_URL,
             json={"text": message},
@@ -83,7 +87,7 @@ def monitor_until_stopped(
         current_openwebui = current_uris.get("openwebui", "")
         if current_openwebui != last_openwebui:
             # Send notification.
-            chat_res: Result[None, str] = send_to_google_chat(
+            chat_res: Result[None, str] = send_to_discord(
                 str(current_uris)
             )
 
@@ -181,7 +185,7 @@ def run_monitor() -> None:
                 new_url_result = get_ngrok_urls()
                 match new_url_result:
                     case Success(new_uris):
-                        send_to_google_chat(f"{new_uris}")
+                        send_to_discord(f"{new_uris}")
                         logger.info(
                             f"Reset complete. New URL sent to chat: {new_uris}")
                         # Technically we should restart monitoring here,
