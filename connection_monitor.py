@@ -93,12 +93,12 @@ def monitor_until_stopped(
 
             match chat_res:
                 case Success(_):
-                    logger.info(f"URLs sent to Google Chat: {current_uris}")
+                    logger.info(f"URLs sent to Discord: {current_uris}")
                     # Update last known state
                     last_openwebui = current_openwebui
                 case Failure(err):
                     # If chat fails, we consider this a loop-breaking error
-                    logger.error(f"Failed to send to Google Chat: {err}")
+                    logger.error(f"Failed to send to Discord: {err}")
                     return Failure(err)
                 case _: pass
 
