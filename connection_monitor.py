@@ -53,7 +53,7 @@ def send_to_discord(message: str) -> Result[None, str]:
         assert WEBHOOK_URL, "DISCORD_WEBHOOK_URL not set"
         response = requests.post(
             WEBHOOK_URL,
-            json={"text": message},
+            json={"content": message},
             timeout=10
         )
         response.raise_for_status()
