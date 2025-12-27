@@ -441,23 +441,23 @@ resource "docker_container" "spark_worker" {
 
   # Jars for S3 support.
   volumes {
-    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
-    container_path = "/opt/spark/jars/hadoop-aws-3.3.3.jar"
+    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.4.jar"
+    container_path = "/opt/spark/jars/hadoop-aws-3.3.4.jar"
   }
 
   volumes {
-    host_path      = "${path.cwd}/hive/hadoop-client-3.3.3.jar"
-    container_path = "/opt/spark/jars/hadoop-client-3.3.3.jar"
+    host_path      = "${path.cwd}/hive/hadoop-client-3.3.4.jar"
+    container_path = "/opt/spark/jars/hadoop-client-3.3.4.jar"
   }
 
   volumes {
-    host_path      = "${path.cwd}/hive/hadoop-common-3.3.3.jar"
-    container_path = "/opt/spark/jars/hadoop-common-3.3.3.jar"
+    host_path      = "${path.cwd}/hive/hadoop-common-3.3.4.jar"
+    container_path = "/opt/spark/jars/hadoop-common-3.3.4.jar"
   }
 
   volumes {
-    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
-    container_path = "/opt/spark/jars/aws-java-sdk-bundle-1.11.1026.jar"
+    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.12.262.jar"
+    container_path = "/opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar"
   }
 
   networks_advanced {
