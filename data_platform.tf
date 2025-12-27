@@ -396,6 +396,18 @@ resource "docker_container" "spark_master" {
     volume_name    = docker_volume.spark_events.name
     container_path = "/opt/spark/events"
   }
+
+  # Jars for S3 support.
+  volumes {
+    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
+    container_path = "/opt/spark/jars/hadoop-aws-3.3.3.jar"
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
+    container_path = "/opt/spark/jars/aws-java-sdk-bundle-1.11.1026.jar"
+  }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
@@ -416,6 +428,18 @@ resource "docker_container" "spark_worker" {
     volume_name    = docker_volume.spark_events.name
     container_path = "/opt/spark/events"
   }
+
+  # Jars for S3 support.
+  volumes {
+    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
+    container_path = "/opt/spark/jars/hadoop-aws-3.3.3.jar"
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
+    container_path = "/opt/spark/jars/aws-java-sdk-bundle-1.11.1026.jar"
+  }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
