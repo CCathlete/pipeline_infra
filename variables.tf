@@ -133,7 +133,8 @@ variable "AIRFLOW_IMAGE_NAME" {
 variable "SPARK_IMAGE_NAME" {
   description = "Docker image for Apache Spark."
   type        = string
-  default     = "apache/spark:3.5.1"
+  # default     = "apache/spark:3.5.1"
+  default = "apache/spark:4.1.0-scala2.13-java21-python3-r-ubuntu"
 }
 
 variable "SUPERSET_IMAGE_NAME" {

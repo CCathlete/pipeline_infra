@@ -404,6 +404,16 @@ resource "docker_container" "spark_master" {
   }
 
   volumes {
+    host_path      = "${path.cwd}/hive/hadoop-client-3.3.3.jar"
+    container_path = "/opt/spark/jars/hadoop-client-3.3.3.jar"
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/hive/hadoop-common-3.3.3.jar"
+    container_path = "/opt/spark/jars/hadoop-common-3.3.3.jar"
+  }
+
+  volumes {
     host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
     container_path = "/opt/spark/jars/aws-java-sdk-bundle-1.11.1026.jar"
   }
@@ -433,6 +443,16 @@ resource "docker_container" "spark_worker" {
   volumes {
     host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
     container_path = "/opt/spark/jars/hadoop-aws-3.3.3.jar"
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/hive/hadoop-client-3.3.3.jar"
+    container_path = "/opt/spark/jars/hadoop-client-3.3.3.jar"
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/hive/hadoop-common-3.3.3.jar"
+    container_path = "/opt/spark/jars/hadoop-common-3.3.3.jar"
   }
 
   volumes {
