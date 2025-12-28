@@ -428,9 +428,9 @@ resource "docker_container" "spark_master" {
 resource "docker_container" "spark_worker" {
   name    = "spark_worker"
   image   = var.SPARK_IMAGE_NAME
-  command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+  command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://172.17.0.1:7077"]
   env = [
-    "SPARK_MASTER_URL=spark://spark-master:7077",
+    "SPARK_MASTER_URL=spark://172.17.0.1:7077",
     "SPARK_WORKER_CORES=2",
     "SPARK_WORKER_MEMORY=2g",
   ]
