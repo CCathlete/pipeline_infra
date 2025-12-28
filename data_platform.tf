@@ -387,6 +387,9 @@ resource "docker_container" "spark-master" {
     "SPARK_MASTER_WEBUI_PORT=8080",
     "SPARK_EVENT_LOG_ENABLED=true",
     "SPARK_EVENT_LOG_DIR=/opt/spark/events",
+    "SPARK_EXECUTOR_CORES=1",
+    "SPARK_EXECUTOR_MEMORY=2g",
+    "SPARK_EXECUTOR_INSTANCES=3",
   ]
   volumes {
     host_path      = "${path.cwd}/spark-jobs"
