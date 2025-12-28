@@ -387,9 +387,6 @@ resource "docker_container" "spark-master" {
     "SPARK_MASTER_WEBUI_PORT=8080",
     "SPARK_EVENT_LOG_ENABLED=true",
     "SPARK_EVENT_LOG_DIR=/opt/spark/events",
-    "SPARK_EXECUTOR_CORES=1",
-    "SPARK_EXECUTOR_MEMORY=2g",
-    "SPARK_EXECUTOR_INSTANCES=3",
   ]
   volumes {
     host_path      = "${path.cwd}/spark-jobs"
@@ -434,8 +431,11 @@ resource "docker_container" "spark-worker" {
   command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
   env = [
     "SPARK_MASTER_URL=spark://spark-master:7077",
-    "SPARK_WORKER_CORES=2",
-    "SPARK_WORKER_MEMORY=2g",
+    "SPARK_WORKER_CORES=4",
+    "SPARK_WORKER_MEMORY=6g",
+    "SPARK_EXECUTOR_CORES=1",
+    "SPARK_EXECUTOR_MEMORY=2g",
+    "SPARK_EXECUTOR_INSTANCES=3",
   ]
   volumes {
     volume_name    = docker_volume.spark_events.name
