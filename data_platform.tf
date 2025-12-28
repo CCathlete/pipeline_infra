@@ -304,7 +304,7 @@ resource "docker_container" "airflow_webserver" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio, docker_container.postgres_metadata]
+  depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
 }
 
 # Airflow Scheduler
@@ -340,7 +340,7 @@ resource "docker_container" "airflow_scheduler" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master, docker_container.minio, docker_container.postgres_metadata]
+  depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
 }
 
 # MinIO Service
@@ -371,8 +371,8 @@ resource "docker_container" "minio" {
 }
 
 # Spark Master
-resource "docker_container" "spark_master" {
-  name  = "spark_master"
+resource "docker_container" "spark-master" {
+  name  = "spark-master"
   image = var.SPARK_IMAGE_NAME
   ports {
     internal = 7077
@@ -380,7 +380,7 @@ resource "docker_container" "spark_master" {
   }
   ports {
     internal = 8080
-    external = 8081
+    external = 8181
   }
   command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
   env = [
@@ -425,12 +425,12 @@ resource "docker_container" "spark_master" {
 }
 
 # Spark Worker
-resource "docker_container" "spark_worker" {
-  name    = "spark_worker"
+resource "docker_container" "spark-worker" {
+  name    = "spark-worker"
   image   = var.SPARK_IMAGE_NAME
-  command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://172.17.0.1:7077"]
+  command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
   env = [
-    "SPARK_MASTER_URL=spark://172.17.0.1:7077",
+    "SPARK_MASTER_URL=spark://spark-master:7077",
     "SPARK_WORKER_CORES=2",
     "SPARK_WORKER_MEMORY=2g",
   ]
@@ -464,7 +464,7 @@ resource "docker_container" "spark_worker" {
     name = docker_network.my_shared_network.name
   }
   restart    = "unless-stopped"
-  depends_on = [docker_container.spark_master]
+  depends_on = [docker_container.spark-master]
 }
 
 # Trino Service
