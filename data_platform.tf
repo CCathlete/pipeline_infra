@@ -14,6 +14,7 @@ terraform {
 
 provider "docker" {}
 
+
 # --- Shared Network and Volumes ---
 
 resource "docker_network" "my_shared_network" {
@@ -436,7 +437,10 @@ resource "docker_container" "spark-worker" {
     "SPARK_EXECUTOR_CORES=1",
     "SPARK_EXECUTOR_MEMORY=2g",
     "SPARK_EXECUTOR_INSTANCES=3",
+    "SPARK_CLASSPATH=/opt/spark/jars/hadoop-common-3.3.4.jar:/opt/spark/jars/hadoop-aws-3.3.4.jar:/opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar",
   ]
+
+
   volumes {
     volume_name    = docker_volume.spark_events.name
     container_path = "/opt/spark/events"
