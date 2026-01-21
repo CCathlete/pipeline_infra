@@ -44,10 +44,10 @@ model_list:
 #     api_key: ""
 #     api_base: "http://ollama_llm:11434"
 
-- model_name: Olmo-3.1-32b-think
-  litellm_params:
-    model: "openrouter/allenai/olmo-3.1-32b-think:free"
-    api_key: "os.environ/OPENROUTER_API_KEY"
+# - model_name: Olmo-3.1-32b-think
+#   litellm_params:
+#     model: "openrouter/allenai/olmo-3.1-32b-think:free"
+#     api_key: "os.environ/OPENROUTER_API_KEY"
 
 - model_name: xiaomi-mimo-v2-flash
   litellm_params:
@@ -64,20 +64,20 @@ model_list:
     model: "openrouter/nvidia/nemotron-3-nano-30b-a3b:free"
     api_key: "os.environ/OPENROUTER_API_KEY"
 
-- model_name: gpt-oss-20b
-  litellm_params:
-    model: "huggingface/openai/gpt-oss-20b"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co"
-
-- model_name: gpt-oss-120b
-  litellm_params:
-    model: "huggingface/openai/gpt-oss-120b"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co"
-
-- model_name: qwen-7b-instruct
-  litellm_params:
-    model: "huggingface/Qwen/Qwen2.5-7B-Instruct"
-    api_key: "os.environ/HUGGINGFACE_TOKEN"
-    api_base: "https://router.huggingface.co/v1"
+# - model_name: gpt-oss-20b
+#   litellm_params:
+#     model: "huggingface/openai/gpt-oss-20b"
+#     api_key: "os.environ/HUGGINGFACE_TOKEN"
+#     api_base: "https://router.huggingface.co"
+#
+# - model_name: gpt-oss-120b
+#   litellm_params:
+#     model: "huggingface/openai/gpt-oss-120b"
+#     api_key: "os.environ/HUGGINGFACE_TOKEN"
+#     api_base: "https://router.huggingface.co"
+#
+# - model_name: qwen-7b-instruct
+#   litellm_params:
+#     model: "huggingface/Qwen/Qwen2.5-7B-Instruct"
+#     api_key: "os.environ/HUGGINGFACE_TOKEN"
+#     api_base: "https://router.huggingface.co/v1"

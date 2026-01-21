@@ -234,115 +234,115 @@ resource "docker_container" "postgres_data" {
 
 
 # Airflow Initializer
-resource "docker_container" "airflow_init" {
-  name  = "airflow_init"
-  image = var.AIRFLOW_IMAGE_NAME
-  user  = "${var.AIRFLOW_UID}:0"
-  command = ["bash", "-c", <<-EOT
-    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1';
-    do
-      echo "Metadata Postgres is unavailable - sleeping"
-      sleep 1
-    done
-    echo "Metadata Postgres is ready! Starting Airflow process..."
-    pip install mypy_boto3_s3
-    airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
-  EOT
-  ]
-  env = local.airflow_env
-
-  dynamic "volumes" {
-    for_each = local.airflow_volumes
-    content {
-      host_path      = lookup(volumes.value, "host_path", null)
-      volume_name    = lookup(volumes.value, "volume_name", null)
-      container_path = volumes.value.container_path
-      read_only      = volumes.value.read_only
-    }
-  }
-
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  depends_on = [docker_container.postgres_metadata]
-}
-
-# Airflow Webserver
-resource "docker_container" "airflow_webserver" {
-  name  = "airflow_webserver"
-  image = var.AIRFLOW_IMAGE_NAME
-  user  = "${var.AIRFLOW_UID}:0"
-  command = ["bash", "-c", <<-EOT
-    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
-    do
-      echo "Metadata Postgres is unavailable - sleeping"
-      sleep 1
-    done
-    echo "Metadata Postgres is ready! Starting Airflow process..."
-    pip install mypy_boto3_s3
-    airflow webserver
-  EOT
-  ]
-  ports {
-    internal = 8080
-    external = 8080
-  }
-  env = local.airflow_env
-
-  dynamic "volumes" {
-    for_each = local.airflow_volumes
-    content {
-      host_path      = lookup(volumes.value, "host_path", null)
-      volume_name    = lookup(volumes.value, "volume_name", null)
-      container_path = volumes.value.container_path
-      read_only      = volumes.value.read_only
-    }
-  }
-
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
-}
-
-# Airflow Scheduler
-resource "docker_container" "airflow_scheduler" {
-  name  = "airflow_scheduler"
-  image = var.AIRFLOW_IMAGE_NAME
-  user  = "${var.AIRFLOW_UID}:0"
-  command = ["bash", "-c", <<-EOT
-    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
-    do
-      echo "Metadata Postgres is unavailable - sleeping"
-      sleep 1
-    done
-    echo "Metadata Postgres is ready! Starting Airflow process..."
-    pip install mypy_boto3_s3
-    airflow scheduler
-  EOT
-  ]
-  env = local.airflow_env
-
-  dynamic "volumes" {
-    for_each = local.airflow_volumes
-    content {
-      host_path      = lookup(volumes.value, "host_path", null)
-      volume_name    = lookup(volumes.value, "volume_name", null)
-      container_path = volumes.value.container_path
-      read_only      = volumes.value.read_only
-    }
-  }
-
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
-}
+# resource "docker_container" "airflow_init" {
+#   name  = "airflow_init"
+#   image = var.AIRFLOW_IMAGE_NAME
+#   user  = "${var.AIRFLOW_UID}:0"
+#   command = ["bash", "-c", <<-EOT
+#     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+#     until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1';
+#     do
+#       echo "Metadata Postgres is unavailable - sleeping"
+#       sleep 1
+#     done
+#     echo "Metadata Postgres is ready! Starting Airflow process..."
+#     pip install mypy_boto3_s3
+#     airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
+#   EOT
+#   ]
+#   env = local.airflow_env
+#
+#   dynamic "volumes" {
+#     for_each = local.airflow_volumes
+#     content {
+#       host_path      = lookup(volumes.value, "host_path", null)
+#       volume_name    = lookup(volumes.value, "volume_name", null)
+#       container_path = volumes.value.container_path
+#       read_only      = volumes.value.read_only
+#     }
+#   }
+#
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#   depends_on = [docker_container.postgres_metadata]
+# }
+#
+# # Airflow Webserver
+# resource "docker_container" "airflow_webserver" {
+#   name  = "airflow_webserver"
+#   image = var.AIRFLOW_IMAGE_NAME
+#   user  = "${var.AIRFLOW_UID}:0"
+#   command = ["bash", "-c", <<-EOT
+#     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+#     until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+#     do
+#       echo "Metadata Postgres is unavailable - sleeping"
+#       sleep 1
+#     done
+#     echo "Metadata Postgres is ready! Starting Airflow process..."
+#     pip install mypy_boto3_s3
+#     airflow webserver
+#   EOT
+#   ]
+#   ports {
+#     internal = 8080
+#     external = 8080
+#   }
+#   env = local.airflow_env
+#
+#   dynamic "volumes" {
+#     for_each = local.airflow_volumes
+#     content {
+#       host_path      = lookup(volumes.value, "host_path", null)
+#       volume_name    = lookup(volumes.value, "volume_name", null)
+#       container_path = volumes.value.container_path
+#       read_only      = volumes.value.read_only
+#     }
+#   }
+#
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#   restart    = "always"
+#   depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
+# }
+#
+# # Airflow Scheduler
+# resource "docker_container" "airflow_scheduler" {
+#   name  = "airflow_scheduler"
+#   image = var.AIRFLOW_IMAGE_NAME
+#   user  = "${var.AIRFLOW_UID}:0"
+#   command = ["bash", "-c", <<-EOT
+#     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+#     until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+#     do
+#       echo "Metadata Postgres is unavailable - sleeping"
+#       sleep 1
+#     done
+#     echo "Metadata Postgres is ready! Starting Airflow process..."
+#     pip install mypy_boto3_s3
+#     airflow scheduler
+#   EOT
+#   ]
+#   env = local.airflow_env
+#
+#   dynamic "volumes" {
+#     for_each = local.airflow_volumes
+#     content {
+#       host_path      = lookup(volumes.value, "host_path", null)
+#       volume_name    = lookup(volumes.value, "volume_name", null)
+#       container_path = volumes.value.container_path
+#       read_only      = volumes.value.read_only
+#     }
+#   }
+#
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#   restart    = "always"
+#   depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
+# }
 
 # MinIO Service
 resource "docker_container" "minio" {
@@ -475,30 +475,30 @@ resource "docker_container" "spark-worker" {
 }
 
 # Trino Service
-resource "docker_container" "trino" {
-  name  = "trino_query_engine"
-  image = "trinodb/trino:latest"
-  ports {
-    internal = 8080
-    external = 8082
-  }
-  user       = "1000:1000"
-  entrypoint = ["/usr/lib/trino/bin/run-trino"]
-  volumes {
-    host_path      = "${path.cwd}/trino/etc"
-    container_path = "/etc/trino"
-  }
-  volumes {
-    host_path      = "${path.cwd}/trino_data"
-    container_path = "/var/lib/trino"
-  }
-  networks_advanced {
-    name    = docker_network.my_shared_network.name
-    aliases = ["trino"]
-  }
-  restart    = "unless-stopped"
-  depends_on = [docker_container.minio, docker_container.hive-metastore]
-}
+# resource "docker_container" "trino" {
+#   name  = "trino_query_engine"
+#   image = "trinodb/trino:latest"
+#   ports {
+#     internal = 8080
+#     external = 8082
+#   }
+#   user       = "1000:1000"
+#   entrypoint = ["/usr/lib/trino/bin/run-trino"]
+#   volumes {
+#     host_path      = "${path.cwd}/trino/etc"
+#     container_path = "/etc/trino"
+#   }
+#   volumes {
+#     host_path      = "${path.cwd}/trino_data"
+#     container_path = "/var/lib/trino"
+#   }
+#   networks_advanced {
+#     name    = docker_network.my_shared_network.name
+#     aliases = ["trino"]
+#   }
+#   restart    = "unless-stopped"
+#   depends_on = [docker_container.minio, docker_container.hive-metastore]
+# }
 
 # # Ollama Initializer
 # resource "docker_container" "ollama_init" {
@@ -854,63 +854,63 @@ resource "docker_container" "litellm" {
 }
 
 # --- Open WebUI Service ---
-resource "docker_container" "open_webui" {
-  name  = "open_webui"
-  image = "ghcr.io/open-webui/open-webui:main"
-
-  ports {
-    internal = 8080
-    external = 3000
-  }
-
-  env = [
-    "OPENAI_API_BASE_URL=http://litellm_proxy:4000/v1",
-    "OPENAI_API_KEY=sk-not-required", # LiteLLM handles the real keys
-    "ENABLE_OLLAMA=false",
-    "WEBUI_SECRET_KEY=${var.OPEN_WEBUI_SECRET_KEY}"
-  ]
-
-  volumes {
-    volume_name    = docker_volume.open_webui_data.name
-    container_path = "/app/backend/data"
-  }
-
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-
-  restart    = "unless-stopped"
-  depends_on = [docker_container.litellm]
-}
-
-resource "docker_container" "ngrok" {
-  image = "ngrok/ngrok:latest"
-  name  = "ngrok"
-
-  volumes {
-    host_path      = "${path.cwd}/ngrok/config.yaml"
-    container_path = "/etc/ngrok.yml"
-  }
-
-  env = [
-    "NGROK_AUTHTOKEN=${var.NGROK_AUTHTOKEN}"
-  ]
-
-
-  command = ["start", "--all", "--config", "/etc/ngrok.yml"]
-
-  ports {
-    internal = 4040
-    external = 4040
-  }
-
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-
-  restart    = "unless-stopped"
-  depends_on = [docker_container.open_webui]
-}
+# resource "docker_container" "open_webui" {
+#   name  = "open_webui"
+#   image = "ghcr.io/open-webui/open-webui:main"
+#
+#   ports {
+#     internal = 8080
+#     external = 3000
+#   }
+#
+#   env = [
+#     "OPENAI_API_BASE_URL=http://litellm_proxy:4000/v1",
+#     "OPENAI_API_KEY=sk-not-required", # LiteLLM handles the real keys
+#     "ENABLE_OLLAMA=false",
+#     "WEBUI_SECRET_KEY=${var.OPEN_WEBUI_SECRET_KEY}"
+#   ]
+#
+#   volumes {
+#     volume_name    = docker_volume.open_webui_data.name
+#     container_path = "/app/backend/data"
+#   }
+#
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#
+#   restart    = "unless-stopped"
+#   depends_on = [docker_container.litellm]
+# }
+#
+# resource "docker_container" "ngrok" {
+#   image = "ngrok/ngrok:latest"
+#   name  = "ngrok"
+#
+#   volumes {
+#     host_path      = "${path.cwd}/ngrok/config.yaml"
+#     container_path = "/etc/ngrok.yml"
+#   }
+#
+#   env = [
+#     "NGROK_AUTHTOKEN=${var.NGROK_AUTHTOKEN}"
+#   ]
+#
+#
+#   command = ["start", "--all", "--config", "/etc/ngrok.yml"]
+#
+#   ports {
+#     internal = 4040
+#     external = 4040
+#   }
+#
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+#
+#   restart    = "unless-stopped"
+#   depends_on = [docker_container.open_webui]
+# }
 
 # --- Outputs ---
 
@@ -920,7 +920,6 @@ output "data_platform_access" {
     airflow_webserver    = "http://localhost:8080"
     superset_ui          = "http://localhost:8088"
     spark_master_ui      = "http://localhost:8081"
-    trino_ui             = "http://localhost:8082"
     minio_console        = "http://localhost:9001"
     ollama_api           = "http://localhost:11434"
     postgres_metadata_db = "localhost:${var.POSTGRES_METADATA_PORT}"
