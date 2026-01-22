@@ -65,12 +65,12 @@ resource "docker_volume" "spark_events" {
   }
 }
 
-resource "docker_volume" "sqlite_data" {
-  name = "sqlite_data"
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+# resource "docker_volume" "sqlite_data" {
+#   name = "sqlite_data"
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }
 
 # --- Kafka Storage ---
 resource "docker_volume" "kafka_data" {
@@ -562,18 +562,18 @@ resource "docker_container" "spark-worker" {
 # }
 
 # SQLite Service
-resource "docker_container" "sqlite" {
-  name    = "sqlite_metastore_db"
-  image   = "busybox:latest"
-  command = ["tail", "-f", "/dev/null"]
-  volumes {
-    volume_name    = docker_volume.sqlite_data.name
-    container_path = "/data"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-}
+# resource "docker_container" "sqlite" {
+#   name    = "sqlite_metastore_db"
+#   image   = "busybox:latest"
+#   command = ["tail", "-f", "/dev/null"]
+#   volumes {
+#     volume_name    = docker_volume.sqlite_data.name
+#     container_path = "/data"
+#   }
+#   networks_advanced {
+#     name = docker_network.my_shared_network.name
+#   }
+# }
 
 # Hive schema initialization (Runs before the main Metastore service)
 resource "null_resource" "hive_init_schema" {
