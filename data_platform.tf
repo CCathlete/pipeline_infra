@@ -713,7 +713,7 @@ resource "docker_container" "superset_init" {
   env = [
     # CRITICAL: Superset connects to the Metadata DB
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
-    "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
+    # "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
     "SUPERSET_ADMIN_PASSWORD=${var.SUPERSET_ADMIN_PASSWORD}",
     "SUPERSET_ADMIN_EMAIL=${var.SUPERSET_ADMIN_EMAIL}",
     "SUPERSET_ADMIN_USERNAME=${var.SUPERSET_ADMIN_USERNAME}",
@@ -723,6 +723,12 @@ resource "docker_container" "superset_init" {
   volume_name    = docker_volume.superset_home.name
   container_path = "/app/superset_home"
   }
+
+  volumes {
+  host_path      = "${path.cwd}/superset/superset_config.py"
+  container_path = "/app/pythonpath/superset_config.py"
+  }
+
 
   networks_advanced {
     name = docker_network.my_shared_network.name
@@ -747,7 +753,7 @@ resource "docker_container" "superset" {
   }
   env = [
     "SUPERSET_LOAD_EXAMPLES=false",
-    "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
+    # "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
     # CRITICAL: Superset connects to the Metadata DB
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
   ]
@@ -755,6 +761,11 @@ resource "docker_container" "superset" {
   volumes {
   volume_name    = docker_volume.superset_home.name
   container_path = "/app/superset_home"
+  }
+
+  volumes {
+  host_path      = "${path.cwd}/superset/superset_config.py"
+  container_path = "/app/pythonpath/superset_config.py"
   }
 
   networks_advanced {
