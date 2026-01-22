@@ -80,6 +80,7 @@ resource "docker_volume" "kafka_data" {
   }
 }
 
+#TODO: Remove in the future as open web ui is serve on another machine.
 resource "docker_volume" "open_webui_data" {
   name = "open_webui_data"
   lifecycle {
@@ -710,7 +711,7 @@ resource "docker_container" "superset_init" {
     "SUPERSET_ADMIN_USERNAME=${var.SUPERSET_ADMIN_USERNAME}",
   ]
   volumes {
-    volume_name    = docker_volume.sqlite_data.name
+    volume_name    = docker_volume.postgres_data_metadata.name
     container_path = "/app"
   }
   networks_advanced {
@@ -741,7 +742,7 @@ resource "docker_container" "superset" {
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
   ]
   volumes {
-    volume_name    = docker_volume.sqlite_data.name
+    volume_name    = docker_volume.postgres_data_metadata.name
     container_path = "/app"
   }
   networks_advanced {
