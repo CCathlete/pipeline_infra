@@ -220,3 +220,4 @@ __marimo__/
 **/*.jar
 **/*.tfstate*
 **/*.tfplan*
+**/*superset_config*

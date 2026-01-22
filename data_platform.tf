@@ -73,12 +73,20 @@ resource "docker_volume" "spark_events" {
 # }
 
 # --- Kafka Storage ---
-resource "docker_volume" "kafka_data" {
-  name = "kafka_data"
+# resource "docker_volume" "kafka_data" {
+#   name = "kafka_data"
+#   lifecycle {
+#     prevent_destroy = true
+#   }
+# }
+
+resource "docker_volume" "superset_home" {
+  name = "superset_home"
   lifecycle {
     prevent_destroy = true
   }
 }
+
 
 #TODO: Remove in the future as open web ui is serve on another machine.
 resource "docker_volume" "open_webui_data" {
@@ -710,10 +718,12 @@ resource "docker_container" "superset_init" {
     "SUPERSET_ADMIN_EMAIL=${var.SUPERSET_ADMIN_EMAIL}",
     "SUPERSET_ADMIN_USERNAME=${var.SUPERSET_ADMIN_USERNAME}",
   ]
+
   volumes {
-    volume_name    = docker_volume.postgres_data_metadata.name
-    container_path = "/app"
+  volume_name    = docker_volume.superset_home.name
+  container_path = "/app/superset_home"
   }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
@@ -741,10 +751,12 @@ resource "docker_container" "superset" {
     # CRITICAL: Superset connects to the Metadata DB
     "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
   ]
+
   volumes {
-    volume_name    = docker_volume.postgres_data_metadata.name
-    container_path = "/app"
+  volume_name    = docker_volume.superset_home.name
+  container_path = "/app/superset_home"
   }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
@@ -784,10 +796,10 @@ resource "docker_container" "kafka" {
     "KAFKA_LOG_DIRS=/var/lib/kafka/data"
   ]
 
-  volumes {
-    volume_name    = docker_volume.kafka_data.name
-    container_path = "/var/lib/kafka/data"
-  }
+  # volumes {
+  #   volume_name    = docker_volume.kafka_data.name
+  #   container_path = "/var/lib/kafka/data"
+  # }
 
   networks_advanced {
     name = docker_network.my_shared_network.name
