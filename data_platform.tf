@@ -966,13 +966,14 @@ resource "docker_container" "phoenix" {
     
     # --- Authentication Setup ---
     "PHOENIX_ENABLE_AUTH=true",
-    "PHOENIX_SECRET=${var.PHOENIX_SECRET_KEY}",
+    "PHOENIX_SECRET=${var.PHOENIX_SECRET}",
+    "PHOENIX_ADMIN_SECRET=${var.PHOENIX_ADMIN_SECRET}",
+
     "PHOENIX_OIDC_CLIENT_ID=",      # Not using OIDC
     "PHOENIX_OIDC_CLIENT_SECRET=",
 
     # --- Admin Credentials ---
-    "PHOENIX_ADMIN_USER=${var.PHOENIX_ADMIN_EMAIL}",
-    "PHOENIX_ADMIN_PASSWORD=${var.PHOENIX_ADMIN_PASSWORD}"
+    "PHOENIX_ADMINS=user1=${var.PHOENIX_ADMIN_EMAIL}",
   ]
 
   volumes {
