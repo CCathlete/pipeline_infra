@@ -980,7 +980,7 @@ resource "docker_container" "phoenix" {
   }
 
   restart    = "unless-stopped"
-  depends_on = [docker_container.postgres]
+  depends_on = [docker_container.postgres_data]
 }
 
 # --- Outputs ---
