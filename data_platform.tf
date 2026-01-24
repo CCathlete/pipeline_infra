@@ -30,6 +30,13 @@ resource "docker_network" "my_shared_network" {
   }
 }
 
+resource "docker_volume" "phoenix_data" {
+  name = "phoenix_data"
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "docker_volume" "postgres_data_metadata" {
   name = "postgres_data_metadata"
   lifecycle {
@@ -243,115 +250,115 @@ resource "docker_container" "postgres_data" {
 
 
 # Airflow Initializer
-# resource "docker_container" "airflow_init" {
-#   name  = "airflow_init"
-#   image = var.AIRFLOW_IMAGE_NAME
-#   user  = "${var.AIRFLOW_UID}:0"
-#   command = ["bash", "-c", <<-EOT
-#     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-#     until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1';
-#     do
-#       echo "Metadata Postgres is unavailable - sleeping"
-#       sleep 1
-#     done
-#     echo "Metadata Postgres is ready! Starting Airflow process..."
-#     pip install mypy_boto3_s3
-#     airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
-#   EOT
-#   ]
-#   env = local.airflow_env
-#
-#   dynamic "volumes" {
-#     for_each = local.airflow_volumes
-#     content {
-#       host_path      = lookup(volumes.value, "host_path", null)
-#       volume_name    = lookup(volumes.value, "volume_name", null)
-#       container_path = volumes.value.container_path
-#       read_only      = volumes.value.read_only
-#     }
-#   }
-#
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#   depends_on = [docker_container.postgres_metadata]
-# }
-#
-# # Airflow Webserver
-# resource "docker_container" "airflow_webserver" {
-#   name  = "airflow_webserver"
-#   image = var.AIRFLOW_IMAGE_NAME
-#   user  = "${var.AIRFLOW_UID}:0"
-#   command = ["bash", "-c", <<-EOT
-#     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-#     until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
-#     do
-#       echo "Metadata Postgres is unavailable - sleeping"
-#       sleep 1
-#     done
-#     echo "Metadata Postgres is ready! Starting Airflow process..."
-#     pip install mypy_boto3_s3
-#     airflow webserver
-#   EOT
-#   ]
-#   ports {
-#     internal = 8080
-#     external = 8080
-#   }
-#   env = local.airflow_env
-#
-#   dynamic "volumes" {
-#     for_each = local.airflow_volumes
-#     content {
-#       host_path      = lookup(volumes.value, "host_path", null)
-#       volume_name    = lookup(volumes.value, "volume_name", null)
-#       container_path = volumes.value.container_path
-#       read_only      = volumes.value.read_only
-#     }
-#   }
-#
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#   restart    = "always"
-#   depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
-# }
-#
-# # Airflow Scheduler
-# resource "docker_container" "airflow_scheduler" {
-#   name  = "airflow_scheduler"
-#   image = var.AIRFLOW_IMAGE_NAME
-#   user  = "${var.AIRFLOW_UID}:0"
-#   command = ["bash", "-c", <<-EOT
-#     echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-#     until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
-#     do
-#       echo "Metadata Postgres is unavailable - sleeping"
-#       sleep 1
-#     done
-#     echo "Metadata Postgres is ready! Starting Airflow process..."
-#     pip install mypy_boto3_s3
-#     airflow scheduler
-#   EOT
-#   ]
-#   env = local.airflow_env
-#
-#   dynamic "volumes" {
-#     for_each = local.airflow_volumes
-#     content {
-#       host_path      = lookup(volumes.value, "host_path", null)
-#       volume_name    = lookup(volumes.value, "volume_name", null)
-#       container_path = volumes.value.container_path
-#       read_only      = volumes.value.read_only
-#     }
-#   }
-#
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#   restart    = "always"
-#   depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
-# }
+resource "docker_container" "airflow_init" {
+  name  = "airflow_init"
+  image = var.AIRFLOW_IMAGE_NAME
+  user  = "${var.AIRFLOW_UID}:0"
+  command = ["bash", "-c", <<-EOT
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1';
+    do
+      echo "Metadata Postgres is unavailable - sleeping"
+      sleep 1
+    done
+    echo "Metadata Postgres is ready! Starting Airflow process..."
+    pip install mypy_boto3_s3
+    airflow db init && airflow users create --username ${var._AIRFLOW_WWW_USER_USERNAME} --firstname Admin --lastname User --role Admin --email admin@example.com --password ${var._AIRFLOW_WWW_USER_PASSWORD}
+  EOT
+  ]
+  env = local.airflow_env
+
+  dynamic "volumes" {
+    for_each = local.airflow_volumes
+    content {
+      host_path      = lookup(volumes.value, "host_path", null)
+      volume_name    = lookup(volumes.value, "volume_name", null)
+      container_path = volumes.value.container_path
+      read_only      = volumes.value.read_only
+    }
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  depends_on = [docker_container.postgres_metadata]
+}
+
+# Airflow Webserver
+resource "docker_container" "airflow_webserver" {
+  name  = "airflow_webserver"
+  image = var.AIRFLOW_IMAGE_NAME
+  user  = "${var.AIRFLOW_UID}:0"
+  command = ["bash", "-c", <<-EOT
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+    do
+      echo "Metadata Postgres is unavailable - sleeping"
+      sleep 1
+    done
+    echo "Metadata Postgres is ready! Starting Airflow process..."
+    pip install mypy_boto3_s3
+    airflow webserver
+  EOT
+  ]
+  ports {
+    internal = 8080
+    external = 8080
+  }
+  env = local.airflow_env
+
+  dynamic "volumes" {
+    for_each = local.airflow_volumes
+    content {
+      host_path      = lookup(volumes.value, "host_path", null)
+      volume_name    = lookup(volumes.value, "volume_name", null)
+      container_path = volumes.value.container_path
+      read_only      = volumes.value.read_only
+    }
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart    = "always"
+  depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
+}
+
+# Airflow Scheduler
+resource "docker_container" "airflow_scheduler" {
+  name  = "airflow_scheduler"
+  image = var.AIRFLOW_IMAGE_NAME
+  user  = "${var.AIRFLOW_UID}:0"
+  command = ["bash", "-c", <<-EOT
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+    do
+      echo "Metadata Postgres is unavailable - sleeping"
+      sleep 1
+    done
+    echo "Metadata Postgres is ready! Starting Airflow process..."
+    pip install mypy_boto3_s3
+    airflow scheduler
+  EOT
+  ]
+  env = local.airflow_env
+
+  dynamic "volumes" {
+    for_each = local.airflow_volumes
+    content {
+      host_path      = lookup(volumes.value, "host_path", null)
+      volume_name    = lookup(volumes.value, "volume_name", null)
+      container_path = volumes.value.container_path
+      read_only      = volumes.value.read_only
+    }
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart    = "always"
+  depends_on = [docker_container.airflow_init, docker_container.spark-master, docker_container.minio, docker_container.postgres_metadata]
+}
 
 # MinIO Service
 resource "docker_container" "minio" {
@@ -935,6 +942,46 @@ resource "docker_container" "litellm" {
 #   restart    = "unless-stopped"
 #   depends_on = [docker_container.open_webui]
 # }
+
+# Arize Phoenix - LLM Observability with Auth
+resource "docker_container" "phoenix" {
+  name  = "phoenix_observability"
+  image = "arizephoenix/phoenix:latest"
+  
+  ports {
+    internal = 6006
+    external = 6006 
+  }
+  ports {
+    internal = 4317
+    external = 4317 
+  }
+
+  env = [
+    "PHOENIX_PORT=6006",
+    "PHOENIX_GRPC_PORT=4317",
+    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
+    "PHOENIX_HOST=0.0.0.0",
+    
+    # --- Authentication Setup ---
+    "PHOENIX_ENABLE_AUTH=true",
+    "PHOENIX_SECRET_KEY=${var.PHOENIX_SECRET_KEY}",
+    "PHOENIX_OIDC_CLIENT_ID=",      # Not using OIDC
+    "PHOENIX_OIDC_CLIENT_SECRET=",
+  ]
+
+  volumes {
+    volume_name    = docker_volume.phoenix_data.name
+    container_path = "/root/.phoenix"
+  }
+
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+
+  restart    = "unless-stopped"
+  depends_on = [docker_container.postgres]
+}
 
 # --- Outputs ---
 

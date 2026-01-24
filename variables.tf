@@ -198,3 +198,8 @@ variable "NGROK_AUTHTOKEN" {
   type      = string
   sensitive = true
 }
+
+variable "PHOENIX_SECRET_KEY" {
+  type      = string
+  sensitive = true
+}
