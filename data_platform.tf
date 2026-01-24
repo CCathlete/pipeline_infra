@@ -965,7 +965,7 @@ resource "docker_container" "phoenix" {
     
     # --- Authentication Setup ---
     "PHOENIX_ENABLE_AUTH=true",
-    "PHOENIX_SECRET_KEY=${var.PHOENIX_SECRET_KEY}",
+    "PHOENIX_SECRET=${var.PHOENIX_SECRET_KEY}",
     "PHOENIX_OIDC_CLIENT_ID=",      # Not using OIDC
     "PHOENIX_OIDC_CLIENT_SECRET=",
   ]
