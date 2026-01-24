@@ -203,3 +203,17 @@ variable "PHOENIX_SECRET_KEY" {
   type      = string
   sensitive = true
 }
+
+variable "PHOENIX_ADMIN_EMAIL" {
+  type    = string
+  sensitive = true
+}
+
+variable "PHOENIX_ADMIN_PASSWORD" {
+  type      = string
+  sensitive = true
+  validation {
+    condition     = length(var.PHOENIX_ADMIN_PASSWORD) >= 8
+    error_message = "Phoenix admin password must be at least 8 characters."
+  }
+}

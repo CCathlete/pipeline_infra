@@ -968,6 +968,10 @@ resource "docker_container" "phoenix" {
     "PHOENIX_SECRET=${var.PHOENIX_SECRET_KEY}",
     "PHOENIX_OIDC_CLIENT_ID=",      # Not using OIDC
     "PHOENIX_OIDC_CLIENT_SECRET=",
+
+    # --- Admin Credentials ---
+    "PHOENIX_ADMIN_EMAIL=${var.PHOENIX_ADMIN_EMAIL}",
+    "PHOENIX_ADMIN_PASSWORD=${var.PHOENIX_ADMIN_PASSWORD}"
   ]
 
   volumes {
