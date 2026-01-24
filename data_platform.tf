@@ -971,7 +971,7 @@ resource "docker_container" "phoenix" {
     "PHOENIX_OIDC_CLIENT_SECRET=",
 
     # --- Admin Credentials ---
-    "PHOENIX_ADMIN_EMAIL=${var.PHOENIX_ADMIN_EMAIL}",
+    "PHOENIX_ADMIN_USER=${var.PHOENIX_ADMIN_EMAIL}",
     "PHOENIX_ADMIN_PASSWORD=${var.PHOENIX_ADMIN_PASSWORD}"
   ]
 
