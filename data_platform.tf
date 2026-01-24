@@ -960,7 +960,7 @@ resource "docker_container" "phoenix" {
   env = [
     "PHOENIX_PORT=6006",
     "PHOENIX_GRPC_PORT=4317",
-    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
+    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${var.POSTGRES_DOMAIN_DATA_HOST}:5432/${var.POSTGRES_DOMAIN_DATA_DB}",
     "PHOENIX_HOST=0.0.0.0",
     
     # --- Authentication Setup ---
