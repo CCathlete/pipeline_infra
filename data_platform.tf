@@ -90,8 +90,11 @@ resource "docker_volume" "superset_home" {
 # --- Local Variables ---
 locals {
   # New Service Hostnames for internal Docker network
-  postgres_metadata_host = "postgres_metadata_db"
-  postgres_data_host     = "postgres_data_db"
+  # Kept this just as a reminder that locals are an option.
+  postgres_metadata_host = "${var.POSTGRES_METADATA_HOST}"
+  postgres_data_host     = "${var.POSTGRES_DOMAIN_DATA_HOST}"
+  pg_metadata_dockernet_port = "5432"
+  pg_domaindata_dockernet_port = "5432"
 
   # Airflow Common Environment (now points to the Metadata DB using new variables)
   airflow_env = [
@@ -115,7 +118,7 @@ locals {
 
     # Exposing Data DB connection details for use inside DAGs
     "POSTGRES_DOMAIN_DATA_HOST=${local.postgres_data_host}",
-    "POSTGRES_DOMAIN_DATA_PORT=5432", # Internal port
+    "POSTGRES_DOMAIN_DATA_PORT=${local.pg_domaindata_dockernet_port}", # Internal port
     "POSTGRES_DOMAIN_DATA_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
     "POSTGRES_DOMAIN_DATA_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
     "POSTGRES_DOMAIN_DATA_DB=${var.POSTGRES_DOMAIN_DATA_DB}",
@@ -160,6 +163,14 @@ resource "docker_container" "nessie" {
     internal = 19120
     external = 19120
   }
+
+  env = [
+  "NESSIE_VERSION_STORE_TYPE=JDBC",
+  "NESSIE_VERSION_STORE_JDBC_URL=jdbc:postgresql://${var.POSTGRES_METADATA_HOST}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
+  "NESSIE_VERSION_STORE_JDBC_USER=${var.POSTGRES_METADATA_USER}",
+  "NESSIE_VERSION_STORE_JDBC_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+  ]
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
@@ -174,8 +185,8 @@ resource "docker_container" "marquez" {
     external = 5000
   }
   env = [
-    "MARQUEZ_DB_HOST=postgres_data_db",
-    "MARQUEZ_DB_PORT=5432",
+    "MARQUEZ_DB_HOST=${var.POSTGRES_DOMAIN_DATA_HOST}",
+    "MARQUEZ_DB_PORT=${local.pg_domaindata_dockernet_port}",
     "MARQUEZ_DB_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
     "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
     "MARQUEZ_DB_DBNAME=${var.POSTGRES_DOMAIN_DATA_DB}",
@@ -193,7 +204,7 @@ resource "docker_container" "postgres_metadata" {
   name  = local.postgres_metadata_host
   image = "postgres:16-alpine"
   ports {
-    internal = 5432
+    internal = local.pg_metadata_dockernet_port
     external = var.POSTGRES_METADATA_PORT
   }
   env = [
@@ -218,8 +229,8 @@ resource "docker_container" "postgres_data" {
   # image = "postgres:16-alpine"
   image = "pgvector/pgvector:pg16"
   ports {
-    internal = 5432
-    external = var.POSTGRES_DOMAIN_DATA_PORT # Exposed on new port
+    internal = local.pg_domaindata_dockernet_port
+    external = var.POSTGRES_DOMAIN_DATA_PORT
   }
   env = [
     "POSTGRES_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
@@ -243,8 +254,8 @@ resource "docker_container" "airflow_init" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1';
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -p ${local.pg_metadata_dockernet_port} -c 'select 1';
     do
       echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
@@ -278,8 +289,8 @@ resource "docker_container" "airflow_webserver" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -p ${local.pg_metadata_dockernet_port} -c 'select 1' > /dev/null 2>&1;
     do
       echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
@@ -318,8 +329,8 @@ resource "docker_container" "airflow_scheduler" {
   image = var.AIRFLOW_IMAGE_NAME
   user  = "${var.AIRFLOW_UID}:0"
   command = ["bash", "-c", <<-EOT
-    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c 'select 1' > /dev/null 2>&1;
+    echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}..."
+    until PGPASSWORD=${var.POSTGRES_METADATA_PASSWORD} psql -h ${local.postgres_metadata_host} -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -p ${local.pg_metadata_dockernet_port} -c 'select 1' > /dev/null 2>&1;
     do
       echo "Metadata Postgres is unavailable - sleeping"
       sleep 1
@@ -509,7 +520,7 @@ resource "docker_container" "superset_init" {
 
   env = [
     # CRITICAL: Superset connects to the Metadata DB
-    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
+    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
     # "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
     "SUPERSET_ADMIN_PASSWORD=${var.SUPERSET_ADMIN_PASSWORD}",
     "SUPERSET_ADMIN_EMAIL=${var.SUPERSET_ADMIN_EMAIL}",
@@ -552,7 +563,7 @@ resource "docker_container" "superset" {
     "SUPERSET_LOAD_EXAMPLES=false",
     # "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
     # CRITICAL: Superset connects to the Metadata DB
-    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
+    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
   ]
 
   volumes {
@@ -660,7 +671,7 @@ resource "docker_container" "litellm" {
       "LITELLM_MASTER_KEY=${var.LITELLM_MASTER_KEY}",
       "UI_USERNAME=${var.LITELLM_ADMIN_USERNAME}",
       "UI_PASSWORD=${var.LITELLM_ADMIN_PASSWORD}",
-      "DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${local.postgres_data_host}:5432/${var.POSTGRES_DOMAIN_DATA_DB}",
+      "DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
       "LITELLM_SALT_KEY=${var.LITELLM_SALT_KEY}",
     ],
     [for k, v in var.llm_api_keys : "${k}=${v}"]
@@ -691,7 +702,7 @@ resource "docker_container" "phoenix" {
   env = [
     "PHOENIX_PORT=6006",
     "PHOENIX_GRPC_PORT=4317",
-    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${var.POSTGRES_DOMAIN_DATA_HOST}:5432/${var.POSTGRES_DOMAIN_DATA_DB}",
+    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${var.POSTGRES_DOMAIN_DATA_HOST}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
     "PHOENIX_HOST=0.0.0.0",
     "PHOENIX_SQL_DATABASE_SCHEMA=phoenix_internal",
     
