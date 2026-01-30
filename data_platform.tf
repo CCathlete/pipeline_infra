@@ -91,8 +91,8 @@ resource "docker_volume" "superset_home" {
 locals {
   # New Service Hostnames for internal Docker network
   # Kept this just as a reminder that locals are an option.
-  postgres_metadata_host = docker_container.postgres_metadata.name
-  postgres_data_host     = docker_container.postgres_data.name
+  postgres_metadata_host = "postgres_metadata_host"
+  postgres_data_host     = "postgres_data_host"
   pg_metadata_dockernet_port = "5432"
   pg_domaindata_dockernet_port = "5432"
 
