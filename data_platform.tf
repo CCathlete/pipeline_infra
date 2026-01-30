@@ -37,6 +37,13 @@ resource "docker_volume" "phoenix_data" {
   }
 }
 
+resource "docker_volume" "postgres_data_metadata" {
+  name = "postgres_data_metadata"
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "docker_volume" "postgres_data_domain" {
   name = "postgres_data_domain"
   lifecycle {
@@ -80,10 +87,10 @@ resource "docker_volume" "superset_home" {
   }
 }
 
-
 # --- Local Variables ---
 locals {
   # New Service Hostnames for internal Docker network
+  postgres_metadata_host = "postgres_metadata_db"
   postgres_data_host     = "postgres_data_db"
 
   # Airflow Common Environment (now points to the Metadata DB using new variables)
@@ -112,25 +119,6 @@ locals {
     "POSTGRES_DOMAIN_DATA_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
     "POSTGRES_DOMAIN_DATA_DB=${var.POSTGRES_DOMAIN_DATA_DB}",
   ]
-
-  hive_site_xml = templatefile(
-    "${path.cwd}/hive/hive-site.xml.tmpl",
-    {
-      # CRITICAL: Hive Metastore connects to the dedicated Metadata DB
-      postgres_host     = local.postgres_metadata_host
-      postgres_port     = 5432
-      postgres_db       = var.POSTGRES_METADATA_DB
-      postgres_user     = var.POSTGRES_METADATA_USER
-      postgres_password = var.POSTGRES_METADATA_PASSWORD
-    }
-  )
-  core_site_xml = templatefile(
-    "${path.cwd}/hive/core-site.xml.tmpl",
-    {
-      minio_access_key = var.MINIO_ACCESS_KEY
-      minio_secret_key = var.MINIO_SECRET_KEY
-    }
-  )
 
   airflow_volumes = [
     {
@@ -163,18 +151,31 @@ locals {
   pull_commands_string = join(" && ", [for model in var.ollama_models_to_pull : format("ollama pull %s", model)])
 }
 
-# --- Local Files ---
-resource "local_file" "hive_site_rendered" {
-  content  = local.hive_site_xml
-  filename = "${path.cwd}/generated/hive-site.xml"
-}
-resource "local_file" "core_site_rendered" {
-  content  = local.core_site_xml
-  filename = "${path.cwd}/generated/core-site.xml"
-}
-
 # --- Service Containers ---
 
+# 5. PostgreSQL Metadata DB (For Airflow/Superset/Hive Schemas)
+resource "docker_container" "postgres_metadata" {
+  name  = local.postgres_metadata_host
+  image = "postgres:16-alpine"
+  ports {
+    internal = 5432
+    external = var.POSTGRES_METADATA_PORT
+  }
+  env = [
+    "POSTGRES_USER=${var.POSTGRES_METADATA_USER}",
+    "POSTGRES_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+    "POSTGRES_DB=${var.POSTGRES_METADATA_DB}",
+    "PGDATA=/var/lib/postgresql/data/pgdata",
+  ]
+  volumes {
+    volume_name    = docker_volume.postgres_data_metadata.name
+    container_path = "/var/lib/postgresql/data"
+  }
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart = "unless-stopped"
+}
 
 # 6. PostgreSQL Data DB (For Domain-Specific Production Data)
 resource "docker_container" "postgres_data" {
@@ -200,7 +201,6 @@ resource "docker_container" "postgres_data" {
   }
   restart = "unless-stopped"
 }
-
 
 # Airflow Initializer
 resource "docker_container" "airflow_init" {
@@ -442,7 +442,6 @@ resource "docker_container" "spark-worker" {
   restart    = "unless-stopped"
   depends_on = [docker_container.spark-master]
 }
-
 
 # Superset Initializer Service
 resource "docker_container" "superset_init" {
