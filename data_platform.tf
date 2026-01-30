@@ -206,10 +206,12 @@ resource "docker_container" "marquez" {
     "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
     "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
     
-    "MARQUEZ_CONFIG=/marquez.dev.yml",
-    # "MARQUEZ_VERSION=0.50.0",
+    "MARQUEZ_CONFIG=/marquez.yml",
     "MARQUEZ_PORT=9000",
     "MARQUEZ_ADMIN_PORT=9001",
+    # Force Flyway behavior via env var
+    "FLYWAY_IGNORE_MISSING_MIGRATIONS=true",
+    "FLYWAY_OUT_OF_ORDER=true"
   ]
 
   # This mapping helps the JVM see the host's cgroup layout correctly
