@@ -165,23 +165,18 @@ resource "docker_container" "nessie" {
   }
 
   env = [
-    # 1. Nessie Specific Storage Config
     "NESSIE_VERSION_STORE_TYPE=JDBC",
     "NESSIE_VERSION_STORE_JDBC_SCHEMA=nessie",
 
-    # 2. Quarkus Datasource Config (This fixes the InactiveBeanException)
-    "QUARKUS_DATASOURCE_DB_KIND=postgresql",
-    "QUARKUS_DATASOURCE_USERNAME=${var.POSTGRES_METADATA_USER}",
-    "QUARKUS_DATASOURCE_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
-    "QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
+    "NESSIE_VERSION_STORE_PERSIST_JDBC_DATASOURCE=postgresql",
+    "QUARKUS_DATASOURCE_POSTGRESQL_DB_KIND=postgresql",
+
+    "QUARKUS_DATASOURCE_POSTGRESQL_USERNAME=${var.POSTGRES_METADATA_USER}",
+    "QUARKUS_DATASOURCE_POSTGRESQL_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+    "QUARKUS_DATASOURCE_POSTGRESQL_JDBC_URL=jdbc:postgresql://${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
     
-    # 3. OpenTelemetry / Marquez Integration
-    # Points Nessie to Marquez's OTLP endpoint
     "QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://marquez:5000/api/v1/otel/traces",
     "QUARKUS_OTEL_SDK_DISABLED=false",
-
-    # 4. Persistence Tuning
-    "NESSIE_VERSION_STORE_PERSIST_JDBC_DATASOURCE=postgresql"
   ]
 
   volumes {
