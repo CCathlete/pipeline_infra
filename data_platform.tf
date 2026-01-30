@@ -197,8 +197,13 @@ resource "docker_container" "marquez" {
   image = "marquezproject/marquez:0.50.0"
 
   ports {
-    internal = 9000
+    internal = 9010
     external = 9010
+  }
+
+  ports {
+    internal = 9011
+    external = 9011
   }
 
   env = [
@@ -207,8 +212,8 @@ resource "docker_container" "marquez" {
     "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/marquez",
     
     "MARQUEZ_CONFIG=/marquez.yml",
-    "MARQUEZ_PORT=9000",
-    "MARQUEZ_ADMIN_PORT=9001",
+    "MARQUEZ_PORT=9011",
+    "MARQUEZ_ADMIN_PORT=9010",
     # Force Flyway behavior via env var
     "FLYWAY_IGNORE_MISSING_MIGRATIONS=true",
     "FLYWAY_OUT_OF_ORDER=true"
