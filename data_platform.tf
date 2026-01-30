@@ -91,8 +91,8 @@ resource "docker_volume" "superset_home" {
 locals {
   # New Service Hostnames for internal Docker network
   # Kept this just as a reminder that locals are an option.
-  postgres_metadata_host = "${var.POSTGRES_METADATA_HOST}"
-  postgres_data_host     = "${var.POSTGRES_DOMAIN_DATA_HOST}"
+  postgres_metadata_host = docker_container.postgres_metadata.name
+  postgres_data_host     = docker_container.postgres_data.name
   pg_metadata_dockernet_port = "5432"
   pg_domaindata_dockernet_port = "5432"
 
@@ -166,7 +166,7 @@ resource "docker_container" "nessie" {
 
   env = [
   "NESSIE_VERSION_STORE_TYPE=JDBC",
-  "NESSIE_VERSION_STORE_JDBC_URL=jdbc:postgresql://${var.POSTGRES_METADATA_HOST}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
+  "NESSIE_VERSION_STORE_JDBC_URL=jdbc:postgresql://${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
   "NESSIE_VERSION_STORE_JDBC_USER=${var.POSTGRES_METADATA_USER}",
   "NESSIE_VERSION_STORE_JDBC_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
   "NESSIE_VERSION_STORE_JDBC_SCHEMA=nessie",
@@ -192,7 +192,7 @@ resource "docker_container" "marquez" {
     external = 5000
   }
   env = [
-    "MARQUEZ_DB_HOST=${var.POSTGRES_DOMAIN_DATA_HOST}",
+    "MARQUEZ_DB_HOST=${local.postgres_data_host}",
     "MARQUEZ_DB_PORT=${local.pg_domaindata_dockernet_port}",
     "MARQUEZ_DB_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
     "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
@@ -737,7 +737,7 @@ resource "docker_container" "phoenix" {
   env = [
     "PHOENIX_PORT=6006",
     "PHOENIX_GRPC_PORT=4317",
-    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${var.POSTGRES_DOMAIN_DATA_HOST}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
+    "PHOENIX_SQL_DATABASE_URL=postgresql://${var.POSTGRES_DOMAIN_DATA_USER}:${var.POSTGRES_DOMAIN_DATA_PASSWORD}@${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
     "PHOENIX_HOST=0.0.0.0",
     "PHOENIX_SQL_DATABASE_SCHEMA=phoenix_internal",
     
