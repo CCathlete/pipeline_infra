@@ -152,6 +152,40 @@ locals {
 }
 
 # --- Service Containers ---
+resource "docker_container" "nessie" {
+  name  = "nessie"
+  image = "projectnessie/nessie:0.37.1"
+  ports {
+    internal = 19120
+    external = 19120
+  }
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart = "unless-stopped"
+}
+
+resource "docker_container" "marquez" {
+  name  = "marquez"
+  image = "marquezproject/marquez:0.26.0"  # check latest
+  ports {
+    internal = 5000
+    external = 5000
+  }
+  env = [
+    "MARQUEZ_DB_HOST=postgres_data_db",
+    "MARQUEZ_DB_PORT=5432",
+    "MARQUEZ_DB_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
+    "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
+    "MARQUEZ_DB_DBNAME=${var.POSTGRES_DOMAIN_DATA_DB}",
+  ]
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart = "unless-stopped"
+  depends_on = [docker_container.postgres_data]
+}
+
 
 # 5. PostgreSQL Metadata DB (For Airflow/Superset/Hive Schemas)
 resource "docker_container" "postgres_metadata" {
