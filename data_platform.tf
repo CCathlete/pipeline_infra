@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------
-# dataplatform.tf: Deploys the entire Airflow, Spark, Trino, Hive, Superset 
+# dataplatform.tf: Deploys the entire Airflow, Spark, Superset 
 # platform with dedicated Metadata and Data PostgreSQL databases.
 # --------------------------------------------------------------------------
 
@@ -169,7 +169,14 @@ resource "docker_container" "nessie" {
   "NESSIE_VERSION_STORE_JDBC_URL=jdbc:postgresql://${var.POSTGRES_METADATA_HOST}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
   "NESSIE_VERSION_STORE_JDBC_USER=${var.POSTGRES_METADATA_USER}",
   "NESSIE_VERSION_STORE_JDBC_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+  "NESSIE_VERSION_STORE_JDBC_SCHEMA=nessie",
+  "QUARKUS_HTTP_HOST=0.0.0.0",
   ]
+
+  volumes {
+  host_path      = "${path.cwd}/hive/postgresql-42.7.3.jar"
+  container_path = "/nessie/lib/postgresql-42.7.3.jar"
+  }
 
   networks_advanced {
     name = docker_network.my_shared_network.name
@@ -199,7 +206,7 @@ resource "docker_container" "marquez" {
 }
 
 
-# 5. PostgreSQL Metadata DB (For Airflow/Superset/Hive Schemas)
+# 5. PostgreSQL Metadata DB (For Airflow/Superset)
 resource "docker_container" "postgres_metadata" {
   name  = local.postgres_metadata_host
   image = "postgres:16-alpine"
@@ -407,6 +414,20 @@ resource "docker_container" "spark-master" {
     "SPARK_SQL_CATALOG_NESSIE_TYPE=iceberg",
     "SPARK_SQL_CATALOG_NESSIE_WAREHOUSE=s3://warehouse/iceberg",
     "SPARK_SQL_CATALOG_NESSIE_NESSIE_URL=http://nessie:19120/api/v1",
+    # Wiring MinIO to spark.
+    "SPARK_HADOOP_FS_S3A_ENDPOINT=http://minio-storage:9000",
+    "SPARK_HADOOP_FS_S3A_ACCESS_KEY=${var.MINIO_ACCESS_KEY}",
+    "SPARK_HADOOP_FS_S3A_SECRET_KEY=${var.MINIO_SECRET_KEY}",
+    "SPARK_HADOOP_FS_S3A_PATH_STYLE_ACCESS=true",
+    # TODO: Check the effect of setting to true.
+    "SPARK_HADOOP_FS_S3A_CONNECTION_SSL_ENABLED=false",
+    "SPARK_HADOOP_FS_S3A_IMPL=org.apache.hadoop.fs.s3a.S3AFileSystem",
+    # Wiring Nessie as the default catalog.
+    "SPARK_SQL_DEFAULT_CATALOG=nessie",
+    "SPARK_EXTRA_LISTENERS=io.openlineage.spark.agent.OpenLineageSparkListener",
+    # Wiring Marquez for data lineage.
+    "SPARK_OPENLINEAGE_URL=http://marquez:5000",
+    "SPARK_OPENLINEAGE_NAMESPACE=dataplatform",
   ]
   volumes {
     host_path      = "${path.cwd}/spark-jobs"
@@ -464,6 +485,20 @@ resource "docker_container" "spark-worker" {
     "SPARK_SQL_CATALOG_NESSIE_TYPE=iceberg",
     "SPARK_SQL_CATALOG_NESSIE_WAREHOUSE=s3://warehouse/iceberg",
     "SPARK_SQL_CATALOG_NESSIE_NESSIE_URL=http://nessie:19120/api/v1",
+    # Wiring MinIO to spark.
+    "SPARK_HADOOP_FS_S3A_ENDPOINT=http://minio-storage:9000",
+    "SPARK_HADOOP_FS_S3A_ACCESS_KEY=${var.MINIO_ACCESS_KEY}",
+    "SPARK_HADOOP_FS_S3A_SECRET_KEY=${var.MINIO_SECRET_KEY}",
+    "SPARK_HADOOP_FS_S3A_PATH_STYLE_ACCESS=true",
+    # TODO: Check the effect of setting to true.
+    "SPARK_HADOOP_FS_S3A_CONNECTION_SSL_ENABLED=false",
+    "SPARK_HADOOP_FS_S3A_IMPL=org.apache.hadoop.fs.s3a.S3AFileSystem",
+    # Wiring Nessie as the default catalog.
+    "SPARK_SQL_DEFAULT_CATALOG=nessie",
+    "SPARK_EXTRA_LISTENERS=io.openlineage.spark.agent.OpenLineageSparkListener",
+    # Wiring Marquez for data lineage.
+    "SPARK_OPENLINEAGE_URL=http://marquez:5000",
+    "SPARK_OPENLINEAGE_NAMESPACE=dataplatform",
   ]
 
 
@@ -541,7 +576,7 @@ resource "docker_container" "superset_init" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.hive-metastore, docker_container.postgres_metadata]
+  depends_on = [docker_container.postgres_metadata]
 
   provisioner "local-exec" {
     when    = destroy
