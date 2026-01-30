@@ -91,8 +91,8 @@ resource "docker_volume" "superset_home" {
 locals {
   # New Service Hostnames for internal Docker network
   # Kept this just as a reminder that locals are an option.
-  postgres_metadata_host = "postgres_metadata_host"
-  postgres_data_host     = "postgres_data_host"
+  postgres_metadata_host = "postgres_metadata_db"
+  postgres_data_host     = "postgres_data_db"
   pg_metadata_dockernet_port = "5432"
   pg_domaindata_dockernet_port = "5432"
 
@@ -170,7 +170,11 @@ resource "docker_container" "nessie" {
   "NESSIE_VERSION_STORE_JDBC_USER=${var.POSTGRES_METADATA_USER}",
   "NESSIE_VERSION_STORE_JDBC_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
   "NESSIE_VERSION_STORE_JDBC_SCHEMA=nessie",
-  "QUARKUS_HTTP_HOST=0.0.0.0",
+  # Marquez usually exposes OTLP, but Phoenix (4317) is possible instead.
+  "QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://marquez:5000/api/v1/otel/traces", 
+  "QUARKUS_OTEL_SDK_DISABLED=false",
+  # A small delay/retry strategy.
+  "QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT=30",
   ]
 
   volumes {
