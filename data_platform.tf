@@ -204,7 +204,7 @@ resource "docker_container" "marquez" {
   env = [
     "MARQUEZ_DB_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
     "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
-    "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
+    "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/marquez",
     
     "MARQUEZ_CONFIG=/marquez.yml",
     "MARQUEZ_PORT=9000",
@@ -213,6 +213,8 @@ resource "docker_container" "marquez" {
     "FLYWAY_IGNORE_MISSING_MIGRATIONS=true",
     "FLYWAY_OUT_OF_ORDER=true"
   ]
+
+  command = ["server", "/marquez/marquez.yml"]
 
   # This mapping helps the JVM see the host's cgroup layout correctly
   volumes {
@@ -274,10 +276,17 @@ resource "docker_container" "postgres_data" {
     "POSTGRES_DB=${var.POSTGRES_DOMAIN_DATA_DB}",
     "PGDATA=/var/lib/postgresql/data/pgdata",
   ]
+
   volumes {
     volume_name    = docker_volume.postgres_data_domain.name
     container_path = "/var/lib/postgresql/data"
   }
+
+  volumes {
+    host_path      = "${path.cwd}/postgres/init-marquez.sql"
+    container_path = "/docker-entrypoint-initdb.d/init-marquez.sql"
+  }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }

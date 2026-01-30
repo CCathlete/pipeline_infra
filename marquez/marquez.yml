@@ -27,6 +27,7 @@ db:
   user: ${MARQUEZ_DB_USER}
   password: ${MARQUEZ_DB_PASSWORD}
 
+
 # Adjusts retention policy
 # dbRetention:
   # Apply retention policy at a frequency of every 'X' minutes (default: 15)
@@ -37,13 +38,13 @@ db:
   # retentionDays: ${DB_RETENTION_DAYS:-7}
 
 # Enables flyway configuration overrides (see: https://flywaydb.org/documentation/configfiles)
-flyway:
+# flyway:
 #   connectRetries: 3
 #   cleanDisabled: true
-  group: true
-  ignoreMissingMigrations: true
-  # Tells Flyway to keep going despite the PG version.
-  baselineOnMigrate: true
+  # group: true
+  # ignoreMissingMigrations: true
+  # # Tells Flyway to keep going despite the PG version.
+  # baselineOnMigrate: true
 
 # Enables database migration on startup (default: true)
 migrateOnStartup: ${MIGRATE_ON_STARTUP:-true}
