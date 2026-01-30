@@ -195,21 +195,33 @@ resource "docker_container" "nessie" {
 resource "docker_container" "marquez" {
   name  = "marquez"
   image = "marquezproject/marquez:0.50.0"
+
   ports {
     internal = 5000
     external = 5000
   }
+
   env = [
-    "MARQUEZ_DB_HOST=${local.postgres_data_host}",
-    "MARQUEZ_DB_PORT=${local.pg_domaindata_dockernet_port}",
     "MARQUEZ_DB_USER=${var.POSTGRES_DOMAIN_DATA_USER}",
     "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
-    "MARQUEZ_DB_DBNAME=${var.POSTGRES_DOMAIN_DATA_DB}",
+    "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
+    
+    "MARQUEZ_CONFIG=/marquez/marquez.dev.yml",
+    "MARQUEZ_VERSION=0.50.0"
   ]
+
+  # This mapping helps the JVM see the host's cgroup layout correctly
+  volumes {
+    host_path      = "/sys/fs/cgroup"
+    container_path = "/sys/fs/cgroup"
+    read_only      = true
+  }
+
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  restart = "unless-stopped"
+
+  restart    = "unless-stopped"
   depends_on = [docker_container.postgres_data]
 }
 
