@@ -196,14 +196,16 @@ resource "docker_container" "marquez" {
   name  = "marquez"
   image = "marquezproject/marquez:0.50.0"
 
+  # Application
   ports {
-    internal = 9010
-    external = 9010
+    internal = 8080
+    external = 9011
   }
 
+  # Admin
   ports {
-    internal = 9011
-    external = 9011
+    internal = 8081
+    external = 9010
   }
 
   env = [
@@ -212,8 +214,8 @@ resource "docker_container" "marquez" {
     "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/marquez",
     
     "MARQUEZ_CONFIG=/marquez.yml",
-    "MARQUEZ_PORT=9011",
-    "MARQUEZ_ADMIN_PORT=9010",
+    "MARQUEZ_PORT=8080",
+    "MARQUEZ_ADMIN_PORT=8081",
     # Force Flyway behavior via env var
     "FLYWAY_IGNORE_MISSING_MIGRATIONS=true",
     "FLYWAY_OUT_OF_ORDER=true"
@@ -241,8 +243,17 @@ resource "docker_container" "marquez" {
   depends_on = [docker_container.postgres_data]
 }
 
+resource "null_resource" "setup_marquez_db" {
+  # This ensures it runs after the postgres container is healthy.
+  depends_on = [docker_container.postgres_data]
 
-# 5. PostgreSQL Metadata DB (For Airflow/Superset)
+  provisioner "local-exec" {
+    # We use '|| true' because 'CREATE DATABASE' fails if it already exists.
+    command = "docker exec ${docker_container.postgres_data.name} psql -U ${var.POSTGRES_DOMAIN_DATA_USER} -d postgres -c 'CREATE DATABASE marquez;' || true"
+  }
+}
+
+# PostgreSQL Metadata DB (For Airflow/Superset)
 resource "docker_container" "postgres_metadata" {
   name  = local.postgres_metadata_host
   image = "postgres:16-alpine"
