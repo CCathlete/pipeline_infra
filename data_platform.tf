@@ -103,6 +103,7 @@ locals {
     "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_METADATA_USER}:${var.POSTGRES_METADATA_PASSWORD}@${local.postgres_metadata_host}:5432/${var.POSTGRES_METADATA_DB}",
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
+    "AIRFLOW_CONN_ICEBERG_DEFAULT=iceberg://nessie@nessie:19120/main",
     "AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077",
     "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://minio-storage:9000', 'login': '${var.MINIO_ACCESS_KEY}', 'password': '${var.MINIO_SECRET_KEY}', 'extra': {'aws_access_key_id': '${var.MINIO_ACCESS_KEY}', 'aws_secret_access_key': '${var.MINIO_SECRET_KEY}', 'endpoint_url': 'http://minio-storage:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
 
@@ -154,7 +155,7 @@ locals {
 # --- Service Containers ---
 resource "docker_container" "nessie" {
   name  = "nessie"
-  image = "projectnessie/nessie:0.37.1"
+  image = "ghcr.io/projectnessie/nessie:0.107.0"
   ports {
     internal = 19120
     external = 19120
@@ -391,6 +392,10 @@ resource "docker_container" "spark-master" {
     "SPARK_MASTER_WEBUI_PORT=8080",
     "SPARK_EVENT_LOG_ENABLED=true",
     "SPARK_EVENT_LOG_DIR=/opt/spark/events",
+    "SPARK_SQL_CATALOG_NESSIE=org.apache.iceberg.spark.SparkCatalog",
+    "SPARK_SQL_CATALOG_NESSIE_TYPE=iceberg",
+    "SPARK_SQL_CATALOG_NESSIE_WAREHOUSE=s3://warehouse/iceberg",
+    "SPARK_SQL_CATALOG_NESSIE_NESSIE_URL=http://nessie:19120/api/v1",
   ]
   volumes {
     host_path      = "${path.cwd}/spark-jobs"
@@ -425,7 +430,10 @@ resource "docker_container" "spark-master" {
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
+
   restart = "unless-stopped"
+
+  depends_on = [docker_container.nessie]
 }
 
 # Spark Worker
@@ -441,6 +449,10 @@ resource "docker_container" "spark-worker" {
     "SPARK_EXECUTOR_MEMORY=2g",
     "SPARK_EXECUTOR_INSTANCES=3",
     "SPARK_CLASSPATH=/opt/spark/jars/hadoop-common-3.3.4.jar:/opt/spark/jars/hadoop-aws-3.3.4.jar:/opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar",
+    "SPARK_SQL_CATALOG_NESSIE=org.apache.iceberg.spark.SparkCatalog",
+    "SPARK_SQL_CATALOG_NESSIE_TYPE=iceberg",
+    "SPARK_SQL_CATALOG_NESSIE_WAREHOUSE=s3://warehouse/iceberg",
+    "SPARK_SQL_CATALOG_NESSIE_NESSIE_URL=http://nessie:19120/api/v1",
   ]
 
 
@@ -474,7 +486,7 @@ resource "docker_container" "spark-worker" {
     name = docker_network.my_shared_network.name
   }
   restart    = "unless-stopped"
-  depends_on = [docker_container.spark-master]
+  depends_on = [docker_container.spark-master, docker_container.nessie]
 }
 
 # Superset Initializer Service
