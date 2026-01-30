@@ -37,13 +37,6 @@ resource "docker_volume" "phoenix_data" {
   }
 }
 
-resource "docker_volume" "postgres_data_metadata" {
-  name = "postgres_data_metadata"
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "docker_volume" "postgres_data_domain" {
   name = "postgres_data_domain"
   lifecycle {
@@ -72,13 +65,6 @@ resource "docker_volume" "spark_events" {
   }
 }
 
-# resource "docker_volume" "sqlite_data" {
-#   name = "sqlite_data"
-#   lifecycle {
-#     prevent_destroy = true
-#   }
-# }
-
 # --- Kafka Storage ---
 # resource "docker_volume" "kafka_data" {
 #   name = "kafka_data"
@@ -95,19 +81,9 @@ resource "docker_volume" "superset_home" {
 }
 
 
-#TODO: Remove in the future as open web ui is serve on another machine.
-resource "docker_volume" "open_webui_data" {
-  name = "open_webui_data"
-  lifecycle {
-    # Keeps your prompts and history safe even if you terraform destroy
-    prevent_destroy = true
-  }
-}
-
 # --- Local Variables ---
 locals {
   # New Service Hostnames for internal Docker network
-  postgres_metadata_host = "postgres_metadata_db"
   postgres_data_host     = "postgres_data_db"
 
   # Airflow Common Environment (now points to the Metadata DB using new variables)
@@ -199,29 +175,6 @@ resource "local_file" "core_site_rendered" {
 
 # --- Service Containers ---
 
-# 5. PostgreSQL Metadata DB (For Airflow/Superset/Hive Schemas)
-resource "docker_container" "postgres_metadata" {
-  name  = local.postgres_metadata_host
-  image = "postgres:16-alpine"
-  ports {
-    internal = 5432
-    external = var.POSTGRES_METADATA_PORT
-  }
-  env = [
-    "POSTGRES_USER=${var.POSTGRES_METADATA_USER}",
-    "POSTGRES_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
-    "POSTGRES_DB=${var.POSTGRES_METADATA_DB}",
-    "PGDATA=/var/lib/postgresql/data/pgdata",
-  ]
-  volumes {
-    volume_name    = docker_volume.postgres_data_metadata.name
-    container_path = "/var/lib/postgresql/data"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  restart = "unless-stopped"
-}
 
 # 6. PostgreSQL Data DB (For Domain-Specific Production Data)
 resource "docker_container" "postgres_data" {
@@ -490,214 +443,6 @@ resource "docker_container" "spark-worker" {
   depends_on = [docker_container.spark-master]
 }
 
-# Trino Service
-# resource "docker_container" "trino" {
-#   name  = "trino_query_engine"
-#   image = "trinodb/trino:latest"
-#   ports {
-#     internal = 8080
-#     external = 8082
-#   }
-#   user       = "1000:1000"
-#   entrypoint = ["/usr/lib/trino/bin/run-trino"]
-#   volumes {
-#     host_path      = "${path.cwd}/trino/etc"
-#     container_path = "/etc/trino"
-#   }
-#   volumes {
-#     host_path      = "${path.cwd}/trino_data"
-#     container_path = "/var/lib/trino"
-#   }
-#   networks_advanced {
-#     name    = docker_network.my_shared_network.name
-#     aliases = ["trino"]
-#   }
-#   restart    = "unless-stopped"
-#   depends_on = [docker_container.minio, docker_container.hive-metastore]
-# }
-
-# # Ollama Initializer
-# resource "docker_container" "ollama_init" {
-#   name  = "ollama_init"
-#   image = "ollama/ollama:latest"
-
-#   entrypoint = ["/bin/sh"]
-#   command = [
-#     "-c",
-#     <<-EOT
-#       # Start server in background
-#       ollama serve &
-#       PID=$!
-
-#       # Wait for the server to fully start
-#       sleep 5
-
-#       # Run all pull commands (ensuring success)
-#       ${local.pull_commands_string}
-
-#       # Kill the background server process
-#       kill $PID
-#     EOT
-#   ]
-
-#   volumes {
-#     volume_name    = docker_volume.ollama_models.name
-#     container_path = "/root/.ollama"
-#   }
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#   depends_on = [docker_volume.ollama_models]
-#   must_run   = false
-
-#   # Extracting logs if container is terminated.
-#   provisioner "local-exec" {
-#     when    = destroy
-#     command = "docker logs ${self.name} || true"
-#   }
-# }
-
-# # Ollama Service
-# resource "docker_container" "ollama" {
-#   name  = "ollama_llm"
-#   image = "ollama/ollama:latest"
-#   ports {
-#     internal = 11434
-#     external = 11434
-#   }
-#   volumes {
-#     volume_name    = docker_volume.ollama_models.name
-#     container_path = "/root/.ollama"
-#   }
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#   depends_on = [docker_container.ollama_init]
-#   restart    = "unless-stopped"
-# }
-
-# SQLite Service
-# resource "docker_container" "sqlite" {
-#   name    = "sqlite_metastore_db"
-#   image   = "busybox:latest"
-#   command = ["tail", "-f", "/dev/null"]
-#   volumes {
-#     volume_name    = docker_volume.sqlite_data.name
-#     container_path = "/data"
-#   }
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-# }
-
-# Hive schema initialization (Runs before the main Metastore service)
-resource "null_resource" "hive_init_schema" {
-  depends_on = [
-    docker_container.postgres_metadata,
-    local_file.hive_site_rendered,
-  ]
-
-  provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
-    command     = <<-EOT
-      echo "Waiting for Metadata Postgres at ${local.postgres_metadata_host}:5432..."
-      
-      # Loop until psql command succeeds.
-      until docker exec ${local.postgres_metadata_host} psql -U ${var.POSTGRES_METADATA_USER} -d ${var.POSTGRES_METADATA_DB} -c "SELECT 'Running this from within postgres';" ; do
-        echo "Postgres is not accepting connections yet... sleeping"
-        sleep 2
-      done
-      
-      echo "Postgres is ready. Starting Hive schematool initialization..."
-
-      # Run the temporary container to execute schematool
-      docker run --rm \
-          --network ${docker_network.my_shared_network.name} \
-          --entrypoint /bin/bash \
-          -v ${path.cwd}/generated/hive-site.xml:/opt/hive/conf/hive-site.xml \
-          -v ${path.cwd}/hive/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar \
-          -v ${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar:/opt/hive/lib/aws-java-sdk-bundle-1.11.1026.jar \
-          -v ${path.cwd}/hive/hadoop-aws-3.3.3.jar:/opt/hive/lib/hadoop-aws-3.3.3.jar \
-          -v ${path.cwd}/generated/core-site.xml:/opt/hive/conf/core-site.xml \
-          -e HIVE_CONF_DIR=/opt/hive/conf \
-          -e HADOOP_CONF_DIR=/opt/hive/conf \
-          -e HADOOP_CLIENT_OPTS='-Xmx2G' \
-          apache/hive:4.1.0 \
-          -c "/opt/hive/bin/schematool -dbType postgres -initSchema"
-          
-      # Check if the schematool command succeeded before marking the resource complete
-      if [ $? -ne 0 ]; then
-        echo "ERROR: Hive schematool failed to initialize schema!"
-        exit 1
-      fi
-      
-      echo "Hive schema initialization successful."
-    EOT
-  }
-}
-
-
-# Hive Metastore Service
-resource "docker_container" "hive-metastore" {
-  name    = "hive-metastore"
-  image   = "apache/hive:4.1.0"
-  restart = "unless-stopped"
-
-  ports {
-    internal = 9083
-    external = 9083
-  }
-  entrypoint = ["/opt/hive/bin/hive"]
-  command    = ["--service", "metastore"]
-
-  # Mount the rendered XML and Postgres driver
-  volumes {
-    host_path      = "${path.cwd}/generated/hive-site.xml"
-    container_path = "/opt/hive/conf/hive-site.xml"
-  }
-  volumes {
-    host_path      = "${path.cwd}/generated/core-site.xml"
-    container_path = "/opt/hive/conf/core-site.xml"
-  }
-  volumes {
-    host_path      = "${path.cwd}/hive/postgresql-42.7.3.jar"
-    container_path = "/opt/hive/lib/postgresql-42.7.3.jar"
-  }
-  volumes {
-    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
-    container_path = "/opt/hive/lib/aws-java-sdk-bundle-1.11.1026.jar"
-  }
-  volumes {
-    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
-    container_path = "/opt/hive/lib/hadoop-aws-3.3.3.jar"
-  }
-  volumes {
-    host_path      = "${path.cwd}/hive/aws-java-sdk-bundle-1.11.1026.jar"
-    container_path = "/opt/hadoop/share/hadoop/common/lib/aws-java-sdk-bundle-1.11.1026.jar"
-  }
-  volumes {
-    host_path      = "${path.cwd}/hive/hadoop-aws-3.3.3.jar"
-    container_path = "/opt/hadoop/share/hadoop/common/lib/hadoop-aws-3.3.3.jar"
-  }
-  volumes {
-    host_path      = "${path.cwd}/hive/core-default.xml"
-    container_path = "/opt/hive/conf/core-default.xml"
-  }
-
-  env = [
-    "SERVICE_NAME=metastore",
-    "HIVE_EXECUTION_ENGINE=mr",
-    "HADOOP_CONF_DIR=/opt/hive/conf",
-    "HIVE_CONF_DIR=/opt/hive/conf",
-  ]
-
-  networks_advanced {
-    name    = docker_network.my_shared_network.name
-    aliases = ["hive-metastore"]
-  }
-
-  depends_on = [null_resource.hive_init_schema]
-}
 
 # Superset Initializer Service
 resource "docker_container" "superset_init" {
@@ -883,65 +628,6 @@ resource "docker_container" "litellm" {
 
   restart = "unless-stopped"
 }
-
-# --- Open WebUI Service ---
-# resource "docker_container" "open_webui" {
-#   name  = "open_webui"
-#   image = "ghcr.io/open-webui/open-webui:main"
-#
-#   ports {
-#     internal = 8080
-#     external = 3000
-#   }
-#
-#   env = [
-#     "OPENAI_API_BASE_URL=http://litellm_proxy:4000/v1",
-#     "OPENAI_API_KEY=sk-not-required", # LiteLLM handles the real keys
-#     "ENABLE_OLLAMA=false",
-#     "WEBUI_SECRET_KEY=${var.OPEN_WEBUI_SECRET_KEY}"
-#   ]
-#
-#   volumes {
-#     volume_name    = docker_volume.open_webui_data.name
-#     container_path = "/app/backend/data"
-#   }
-#
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#
-#   restart    = "unless-stopped"
-#   depends_on = [docker_container.litellm]
-# }
-#
-# resource "docker_container" "ngrok" {
-#   image = "ngrok/ngrok:latest"
-#   name  = "ngrok"
-#
-#   volumes {
-#     host_path      = "${path.cwd}/ngrok/config.yaml"
-#     container_path = "/etc/ngrok.yml"
-#   }
-#
-#   env = [
-#     "NGROK_AUTHTOKEN=${var.NGROK_AUTHTOKEN}"
-#   ]
-#
-#
-#   command = ["start", "--all", "--config", "/etc/ngrok.yml"]
-#
-#   ports {
-#     internal = 4040
-#     external = 4040
-#   }
-#
-#   networks_advanced {
-#     name = docker_network.my_shared_network.name
-#   }
-#
-#   restart    = "unless-stopped"
-#   depends_on = [docker_container.open_webui]
-# }
 
 # Arize Phoenix - LLM Observability with Auth
 resource "docker_container" "phoenix" {
