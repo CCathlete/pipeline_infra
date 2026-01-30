@@ -194,7 +194,7 @@ resource "docker_container" "nessie" {
 
 resource "docker_container" "marquez" {
   name  = "marquez"
-  image = "marquezproject/marquez:0.26.0"  # check latest
+  image = "marquezproject/marquez:0.50.0"
   ports {
     internal = 5000
     external = 5000
