@@ -165,27 +165,36 @@ resource "docker_container" "nessie" {
   }
 
   env = [
-  "NESSIE_VERSION_STORE_TYPE=JDBC",
-  "NESSIE_VERSION_STORE_JDBC_URL=jdbc:postgresql://${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
-  "NESSIE_VERSION_STORE_JDBC_USER=${var.POSTGRES_METADATA_USER}",
-  "NESSIE_VERSION_STORE_JDBC_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
-  "NESSIE_VERSION_STORE_JDBC_SCHEMA=nessie",
-  # Marquez usually exposes OTLP, but Phoenix (4317) is possible instead.
-  "QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://marquez:5000/api/v1/otel/traces", 
-  "QUARKUS_OTEL_SDK_DISABLED=false",
-  # A small delay/retry strategy.
-  "QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT=30",
+    # 1. Nessie Specific Storage Config
+    "NESSIE_VERSION_STORE_TYPE=JDBC",
+    "NESSIE_VERSION_STORE_JDBC_SCHEMA=nessie",
+
+    # 2. Quarkus Datasource Config (This fixes the InactiveBeanException)
+    "QUARKUS_DATASOURCE_DB_KIND=postgresql",
+    "QUARKUS_DATASOURCE_USERNAME=${var.POSTGRES_METADATA_USER}",
+    "QUARKUS_DATASOURCE_PASSWORD=${var.POSTGRES_METADATA_PASSWORD}",
+    "QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://${local.postgres_metadata_host}:${local.pg_metadata_dockernet_port}/${var.POSTGRES_METADATA_DB}",
+    
+    # 3. OpenTelemetry / Marquez Integration
+    # Points Nessie to Marquez's OTLP endpoint
+    "QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://marquez:5000/api/v1/otel/traces",
+    "QUARKUS_OTEL_SDK_DISABLED=false",
+
+    # 4. Persistence Tuning
+    "NESSIE_VERSION_STORE_PERSIST_JDBC_DATASOURCE=postgresql"
   ]
 
   volumes {
-  host_path      = "${path.cwd}/hive/postgresql-42.7.3.jar"
-  container_path = "/nessie/lib/postgresql-42.7.3.jar"
+    host_path      = "${path.cwd}/hive/postgresql-42.7.3.jar"
+    container_path = "/nessie/lib/postgresql-42.7.3.jar"
   }
 
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
+  
   restart = "unless-stopped"
+  depends_on = [docker_container.postgres_metadata]
 }
 
 resource "docker_container" "marquez" {
