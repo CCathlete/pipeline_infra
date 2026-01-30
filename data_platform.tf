@@ -206,7 +206,7 @@ resource "docker_container" "marquez" {
     "MARQUEZ_DB_PASSWORD=${var.POSTGRES_DOMAIN_DATA_PASSWORD}",
     "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
     
-    "MARQUEZ_CONFIG=/marquez/marquez.dev.yml",
+    "MARQUEZ_CONFIG=/marquez.dev.yml",
     "MARQUEZ_VERSION=0.50.0"
   ]
 
