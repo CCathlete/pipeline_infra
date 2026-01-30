@@ -197,8 +197,8 @@ resource "docker_container" "marquez" {
   image = "marquezproject/marquez:0.50.0"
 
   ports {
-    internal = 5000
-    external = 5000
+    internal = 9000
+    external = 9010
   }
 
   env = [
@@ -207,7 +207,9 @@ resource "docker_container" "marquez" {
     "MARQUEZ_DB_URL=jdbc:postgresql://${local.postgres_data_host}:${local.pg_domaindata_dockernet_port}/${var.POSTGRES_DOMAIN_DATA_DB}",
     
     "MARQUEZ_CONFIG=/marquez.dev.yml",
-    "MARQUEZ_VERSION=0.50.0"
+    # "MARQUEZ_VERSION=0.50.0",
+    "MARQUEZ_PORT=9000",
+    "MARQUEZ_ADMIN_PORT=9001",
   ]
 
   # This mapping helps the JVM see the host's cgroup layout correctly
@@ -215,6 +217,11 @@ resource "docker_container" "marquez" {
     host_path      = "/sys/fs/cgroup"
     container_path = "/sys/fs/cgroup"
     read_only      = true
+  }
+
+  volumes {
+    host_path      = "${path.cwd}/marquez/marquez.yml"
+    container_path = "/marquez.yml"
   }
 
   networks_advanced {
