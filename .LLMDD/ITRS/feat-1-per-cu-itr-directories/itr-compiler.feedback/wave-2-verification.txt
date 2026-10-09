@@ -1,0 +1,104 @@
+WAVE 2 VERIFICATION REPORT
+==========================
+Wave: 2
+CUs in wave: cu-002 (component + synopsis validation), cu-004 (JSON/YAML schema)
+Date: 2026-10-09
+Role: code lead (verifier)
+
+1. FEEDBACK REVIEW
+------------------
+- cu-002: STATUS=COMPLETED (NO escalation), VERIFICATION_RESULT=FAILED.
+  Coder reported 5 failing CompileTest tests and attributed them to "old
+  fixtures". Reviewed the failing fixtures against the authoritative feature
+  spec: they are the ADV contract, and spec criterion 11 explicitly keeps
+  component-less legacy batches compiling. Root cause = implementation bug,
+  not a fixture bug.
+- cu-004: STATUS=COMPLETED (NO escalation), VERIFICATION_RESULT=PASSED.
+
+2. ESCALATIONS
+--------------
+None. Neither cu-002 nor cu-004 carried STATUS=ESCALATION, so no escalated CU
+had to be implemented from scratch. cu-002 nevertheless required a cross-CU
+repair (below) because its verification FAILED.
+
+3. CROSS-CU CONFLICT FOUND AND REPAIRED (cu-002)
+------------------------------------------------
+Problem: cu-002 added feat-1 enforcement in Compile.execute that ran
+unconditionally -- including single-CU/raw mode and legacy/old-schema batches.
+It rejected every regular CU lacking all four components and every batch
+lacking a synopsis. That contradicts:
+  - feature spec criterion 11: "A component-less legacy CU keeps exactly one
+    <cu-id>.itr frame inside its own folder";
+  - cu-003 STEP 4: old layout behaviour unchanged for component-less batches;
+  - cu-004 ACCEPTANCE: "old-schema batches still compile unchanged";
+  - existing contract tests: CompileTest (raw + legacy JSON/YAML),
+    BatchJSONWriteTest, SingleCUWriteTest.
+Observed before repair: 5 CompileTest failures (raw content, JSON batch, YAML
+batch, empty input, DTR-coordinate raw) and the integration suites fail too.
+
+Repair (implementation only -- NO test file was modified, per RULE.VER.REPAIR):
+  - Compile.scala: feat-1 enforcement now runs only in batch mode AND only for
+    "new-schema" batches -- i.e. when a synopsis is defined or at least one
+    regular CU carries components. Legacy batches and raw single-CU mode are
+    exempt.
+  - RequiredPartsValidation.validateComponents: only regular CUs that actually
+    carry at least one component are required to carry all four; a fully
+    component-less regular CU is a legacy CU and is exempt (criterion 11).
+  - validateBatch / validateForSingleCU signatures, ARCH/LEGEND required-parts
+    logic, override-file exemption, exception type (IllegalStateException) and
+    fail-fast-before-writes position are all unchanged.
+
+4. PER-CU STATUS
+----------------
+- cu-002 component + synopsis validation: CONVERGED (repaired).
+  Error message names the CU id and the missing component; synopsis errors
+  name MAX_ATTEMPTS / implementation summary; exception is IllegalStateException
+  raised before any file is written.
+- cu-004 parsers / batch schema: CONVERGED (as submitted).
+  JSON (top-level array, or {"synopsis":...,"cus":[...]}) and YAML (per-CU
+  components block + top-level synopsis) carry the four components and the
+  synopsis; legacy shape round-trips unchanged.
+
+5. TEST EVIDENCE
+----------------
+- sbt test (FULL suite): 80 tests, 18 suites, 0 failures, 0 pending. Green.
+- sbt testOnly itrcompiler.application.services.*: RequiredPartsValidationTest
+  13/13, CompileTest 6/6, plus CUStore/CoordinateRules/ContentDeserialize green.
+- sbt testOnly itrcompiler.infrastructure.parsers.*: JSONFormatTest and
+  YAMLFormatTest green (backward compatibility preserved).
+- Independent runtime checks (temporary script against the compiled classes,
+  removed afterwards; test tree untouched):
+    * legacy component-less batch compiles (3 CUs)                       PASS
+    * T2: missing one component -> IllegalStateException naming
+      CU id + component name ('cu-x' ... 'acceptance')                   PASS
+    * T3: missing synopsis/MAX_ATTEMPTS -> message names MAX_ATTEMPTS     PASS
+    * T7: blank implementation summary -> message names summary           PASS
+    * valid new-schema batch compiles                                     PASS
+    * raw single-CU mode compiles                                         PASS
+    * empty input returns empty                                           PASS
+    * JSON + YAML round-trip components + synopsis                        PASS
+    * JSON + YAML legacy shape -> empty components / no synopsis         PASS
+  Result: ALL_CHECKS_PASS (0 failed).
+
+6. ARCHITECTURE COMPLIANCE
+--------------------------
+- No cross-layer dependencies introduced: validation stays in application
+  services (RequiredPartsValidation / Compile); parsing stays in infrastructure
+  parsers. Port/adaptor flow unchanged.
+- Validation failure is a hard fail raised before any write (no partial output
+  on a violating batch).
+- TEST_INTEGRITY respected: no test file was created, edited or deleted.
+- NO_DESIGN_CHANGE respected: the repair re-aligns cu-002 with the already
+  approved feature spec (criterion 11) and existing regression contracts; no
+  new design was invented.
+
+7. NOTES / RECOMMENDATION
+-------------------------
+- Feat1ValidationTest.scala / Feat1LayoutTest.scala / Feat1OverrideTest.scala
+  are cu-005 deliverables (wave 4). They were intentionally NOT created here;
+  tests are ADV artifacts. cu-005 must run the full suite on the merged tree.
+- .LLMDD/tools/itr-compiler must be rebuilt (sbt assembly) after waves 3-4
+  before binary-level T1-T7 e2e is meaningful.
+- Incidental workspace change present: .gitignore now ignores **/.bsp (sbt/
+  build-server output). Harmless; final wave lead may include or drop it.
+- Wave 2 is CONVERGED. Ready for wave 3 (cu-003 writer, touches Compile.scala).

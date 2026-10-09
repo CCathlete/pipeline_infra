@@ -1,0 +1,17 @@
+CU_ID=cu-004
+CODER_NAME=cod-4
+DATE=2026-10-09
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=50
+COMMIT_MESSAGE=Implemented cu-004: batch schema components plus synopsis in JSON and YAML parsers with legacy round-trip preserved
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=sbt testOnly itrcompiler.infrastructure.parsers.* green (7 tests); temp verify confirmed old-schema parses to empty components plus None synopsis and new-schema round-trips components, features, maxAttempts, summary for both JSON and YAML, then temp test removed

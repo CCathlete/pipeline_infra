@@ -1,0 +1,18 @@
+COMMIT_MESSAGE=feat(feat-1): cu-002 component/synopsis enforcement (new-schema batches, legacy-exempt) + cu-004 JSON/YAML components & synopsis schema
+
+DETAILS:
+- cu-002: Compile fails fast (IllegalStateException before any write) naming
+  the CU id + missing component for new-schema batches; synopsis errors name
+  MAX_ATTEMPTS / implementation summary. Enforcement is scoped to batch mode
+  and new-schema batches only; legacy component-less batches and raw single-CU
+  mode stay exempt (feature spec criterion 11).
+- cu-004: JSON (top-level array, or {"synopsis":...,"cus":[...]}) and YAML
+  (per-CU components block + top-level synopsis) carry the four components and
+  synopsis; legacy shape round-trips unchanged. maxAttempts defaults to 3.
+- Verification: sbt test 80/80 green (18 suites); independent runtime checks
+  for T2/T3/T7, legacy compile, raw mode, empty input and JSON/YAML round-trip
+  all pass.
+- Code-lead repair: cu-002's original unconditional enforcement broke
+  CompileTest (5), BatchJSONWriteTest and SingleCUWriteTest; scoped it to
+  batch-mode new-schema batches and exempted component-less legacy CUs, without
+  touching any test file.
