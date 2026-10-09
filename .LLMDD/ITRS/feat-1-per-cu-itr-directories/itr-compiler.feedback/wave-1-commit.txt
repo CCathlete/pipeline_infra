@@ -1,1 +1,0 @@
-COMMIT_MESSAGE=feat(models): cu-001 domain model extensions — CU components + required maps/missingComponents; CUSynopsis model; CUBatch.synopsis; tests for synopsis/components (all model tests green)
