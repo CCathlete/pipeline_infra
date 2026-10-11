@@ -2,7 +2,7 @@
 # variables.tf: Defines all input variables used by the configuration
 # --------------------------------------------------------------------------
 
-# PostgreSQL Credentials (Airflow/Superset Metadata DB)
+# PostgreSQL Credentials (Airflow Metadata DB)
 variable "POSTGRES_USER" {
   description = "PostgreSQL user for Airflow metadata DB."
   type        = string
@@ -63,34 +63,6 @@ variable "AIRFLOW_GID" {
 }
 
 
-# Superset Credentials
-variable "SUPERSET_ADMIN_USERNAME" {
-  description = "Superset Admin username."
-  type        = string
-  default     = "admin"
-}
-
-variable "SUPERSET_ADMIN_PASSWORD" {
-  description = "Superset Admin password."
-  type        = string
-  sensitive   = true
-  default     = "password"
-}
-
-variable "SUPERSET_ADMIN_EMAIL" {
-  description = "Superset Admin email."
-  type        = string
-  default     = "admin@superset.com"
-}
-
-variable "SUPERSET_SECRET_KEY" {
-  description = "Superset secret key for session signing."
-  type        = string
-  sensitive   = true
-  default     = "this_is_a_default_key_change_me"
-}
-
-
 # Image Tags
 variable "AIRFLOW_IMAGE_NAME" {
   description = "Docker image for Apache Airflow."
@@ -98,21 +70,9 @@ variable "AIRFLOW_IMAGE_NAME" {
   default     = "apache/airflow:2.8.1"
 }
 
-variable "SPARK_IMAGE_NAME" {
-  description = "Docker image for Apache Spark."
+variable "KAFKA_IMAGE_NAME" {
+  description = "Docker image for Apache Kafka (KRaft mode, single node)."
   type        = string
-  default     = "apache/spark:3.5.1"
+  default     = "apache/kafka:3.7.0"
 }
 
-variable "SUPERSET_IMAGE_NAME" {
-  description = "Docker image for Apache Superset."
-  type        = string
-  default     = "apache/superset:3.0.0"
-}
-
-# List of models to pull for Ollama (RAG creation).
-variable "ollama_models_to_pull" {
-  description = "A list of Ollama model names to be pulled by the init container."
-  type        = list(string)
-  default     = ["llama3", "nomic-embed-text", "gemma2"]
-}

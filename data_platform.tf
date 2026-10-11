@@ -1,6 +1,6 @@
 # --------------------------------------------------------------------------
-# dataplatform.tf: Deploys the entire Airflow, Spark, Trino, Hive, Superset 
-# platform
+# dataplatform.tf: Deploys the Airflow, Kafka, and S3 (LocalStack) platform
+# (newspipe sister infra; Spark and Ollama removed, Kafka added)
 # --------------------------------------------------------------------------
 
 terraform {
@@ -38,24 +38,17 @@ resource "docker_volume" "postgres_data" {
   }
 }
 
-resource "docker_volume" "ollama_models" {
-  name = "ollama_models"
+resource "docker_volume" "localstack_data" {
+  name = "localstack_data"
   lifecycle {
     # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
   }
 }
 
-resource "docker_volume" "minio_data" {
-  name = "minio_data"
-  lifecycle {
-    # Prevents 'terraform destroy' from deleting this network.
-    prevent_destroy = true
-  }
-}
 
-resource "docker_volume" "spark_events" {
-  name = "spark_events"
+resource "docker_volume" "trino_data" {
+  name = "trino_data"
   lifecycle {
     # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
@@ -64,6 +57,14 @@ resource "docker_volume" "spark_events" {
 
 resource "docker_volume" "sqlite_data" {
   name = "sqlite_data"
+  lifecycle {
+    # Prevents 'terraform destroy' from deleting this network.
+    prevent_destroy = true
+  }
+}
+
+resource "docker_volume" "kafka_data" {
+  name = "kafka_data"
   lifecycle {
     # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
@@ -106,8 +107,7 @@ locals {
     "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
-    "AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077",
-    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://minio:9000', 'login': 'minioadmin', 'password': 'minioadminpassword', 'extra': {'aws_access_key_id': 'minioadmin', 'aws_secret_access_key': 'minioadminpassword', 'endpoint_url': 'http://minio:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
+    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://localstack:4566', 'login': 'minioadmin', 'password': 'minioadminpassword', 'extra': {'aws_access_key_id': 'minioadmin', 'aws_secret_access_key': 'minioadminpassword', 'endpoint_url': 'http://localstack:4566', 'region_name': 'us-east-1', 's3_verify': false}}",
     "POSTGRES_USER=${var.POSTGRES_USER}",
     "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
     "POSTGRES_DB=${var.POSTGRES_DB}",
@@ -130,19 +130,7 @@ locals {
       container_path = "/opt/airflow/plugins"
       read_only      = false
     },
-    {
-      volume_name    = docker_volume.spark_events.name
-      container_path = "/opt/airflow/spark_events"
-      read_only      = false
-    },
-    {
-      host_path      = "${path.cwd}/spark-jobs"
-      container_path = "/opt/bitnami/spark/jobs"
-      read_only      = false
-    },
   ]
-
-  pull_commands_string = join(" && ", [for model in var.ollama_models_to_pull : format("ollama pull %s", model)])
 }
 
 # Airflow Initializer
@@ -213,7 +201,7 @@ resource "docker_container" "airflow_webserver" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master]
+  depends_on = [docker_container.airflow_init]
 }
 
 # Airflow Scheduler
@@ -247,87 +235,28 @@ resource "docker_container" "airflow_scheduler" {
     name = docker_network.my_shared_network.name
   }
   restart    = "always"
-  depends_on = [docker_container.airflow_init, docker_container.spark_master]
+  depends_on = [docker_container.airflow_init]
 }
 
-# MinIO Service
-resource "docker_container" "minio" {
-  name  = "minio_storage"
-  image = "minio/minio"
+# LocalStack Service (S3 gateway for the lakehouse bronze path)
+resource "docker_container" "localstack" {
+  name  = "localstack"
+  image = "localstack/localstack:3.8"
   ports {
-    internal = 9000
-    external = 9000
-  }
-  ports {
-    internal = 9001
-    external = 9001
+    internal = 4566
+    external = 4566
   }
   env = [
-    "MINIO_ROOT_USER=minioadmin",
-    "MINIO_ROOT_PASSWORD=minioadminpassword",
+    "SERVICES=s3",
   ]
-  command = ["server", "/data", "--console-address", ":9001"]
   volumes {
-    volume_name    = docker_volume.minio_data.name
-    container_path = "/data"
+    volume_name    = docker_volume.localstack_data.name
+    container_path = "/var/lib/localstack"
   }
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
   restart = "unless-stopped"
-}
-
-# Spark Master
-resource "docker_container" "spark_master" {
-  name  = "spark_master"
-  image = var.SPARK_IMAGE_NAME
-  ports {
-    internal = 7077
-    external = 7077
-  }
-  ports {
-    internal = 8080
-    external = 8081
-  }
-  command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
-  env = [
-    "SPARK_MASTER_WEBUI_PORT=8080",
-    "SPARK_EVENT_LOG_ENABLED=true",
-    "SPARK_EVENT_LOG_DIR=/opt/spark/events",
-  ]
-  volumes {
-    host_path      = "${path.cwd}/spark-jobs"
-    container_path = "/opt/spark/jobs"
-  }
-  volumes {
-    volume_name    = docker_volume.spark_events.name
-    container_path = "/opt/spark/events"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  restart = "unless-stopped"
-}
-
-# Spark Worker
-resource "docker_container" "spark_worker" {
-  name    = "spark_worker"
-  image   = var.SPARK_IMAGE_NAME
-  command = ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
-  env = [
-    "SPARK_MASTER_URL=spark://spark-master:7077",
-    "SPARK_WORKER_CORES=2",
-    "SPARK_WORKER_MEMORY=2g",
-  ]
-  volumes {
-    volume_name    = docker_volume.spark_events.name
-    container_path = "/opt/spark/events"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  restart    = "unless-stopped"
-  depends_on = [docker_container.spark_master]
 }
 
 # Trino Service
@@ -345,75 +274,16 @@ resource "docker_container" "trino" {
     container_path = "/etc/trino"
   }
   volumes {
-    host_path      = "${path.cwd}/trino_data"
+    volume_name    = docker_volume.trino_data.name
     container_path = "/var/lib/trino"
   }
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
   restart    = "unless-stopped"
-  depends_on = [docker_container.minio]
+  depends_on = [docker_container.localstack]
 }
 
-# Ollama Initializer
-resource "docker_container" "ollama_init" {
-  name  = "ollama_init"
-  image = "ollama/ollama:latest"
-
-  entrypoint = ["/bin/sh"]
-  command = [
-    "-c",
-    <<-EOT
-      # Start server in background
-      ollama serve &
-      PID=$!
-      
-      # Wait for the server to fully start
-      sleep 5
-      
-      # Run all pull commands (ensuring success)
-      ${local.pull_commands_string}
-      
-      # Kill the background server process
-      kill $PID
-    EOT
-  ]
-
-  volumes {
-    volume_name    = docker_volume.ollama_models.name
-    container_path = "/root/.ollama"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  depends_on = [docker_volume.ollama_models]
-  must_run   = false
-
-  # Extracting logs if container is terminated.
-  provisioner "local-exec" {
-    when    = destroy
-    command = "docker logs ${self.name} || true"
-  }
-}
-
-# Ollama Service
-resource "docker_container" "ollama" {
-  name  = "ollama_llm"
-  image = "ollama/ollama:latest"
-  ports {
-    internal = 11434
-    external = 11434
-  }
-  volumes {
-    volume_name    = docker_volume.ollama_models.name
-    container_path = "/root/.ollama"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  depends_on = [docker_container.ollama_init]
-  restart    = "unless-stopped"
-}
 
 # SQLite Service
 resource "docker_container" "sqlite" {
@@ -429,6 +299,7 @@ resource "docker_container" "sqlite" {
   }
 }
 
+
 # Hive Metastore Service
 resource "docker_container" "hive_metastore" {
   name  = "hive_metastore"
@@ -438,6 +309,7 @@ resource "docker_container" "hive_metastore" {
     external = 9083
   }
   env = [
+    "HADOOP_HEAPSIZE=512",
     "SERVICE_NAME=metastore",
     "METASTORE_DB_HOSTNAME=sqlite",
     "METASTORE_DB_TYPE=sqlite",
@@ -449,49 +321,41 @@ resource "docker_container" "hive_metastore" {
   depends_on = [docker_container.sqlite]
 }
 
-# Superset Initializer Service
-resource "docker_container" "superset_init" {
-  name    = "superset_init"
-  image   = var.SUPERSET_IMAGE_NAME
-  command = ["/bin/bash", "-c", "superset db upgrade && superset fab create-admin --username ${var.SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${var.SUPERSET_ADMIN_EMAIL} --password ${var.SUPERSET_ADMIN_PASSWORD} && superset init && echo 'Initialization complete. Pausing for 10 seconds...' && sleep 10"]
-  env = [
-    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
-    "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
-    "SUPERSET_ADMIN_PASSWORD=${var.SUPERSET_ADMIN_PASSWORD}",
-    "SUPERSET_ADMIN_EMAIL=${var.SUPERSET_ADMIN_EMAIL}",
-    "SUPERSET_ADMIN_USERNAME=${var.SUPERSET_ADMIN_USERNAME}",
-  ]
-  volumes {
-    volume_name    = docker_volume.sqlite_data.name
-    container_path = "/app"
-  }
-  networks_advanced {
-    name = docker_network.my_shared_network.name
-  }
-  depends_on = [docker_container.hive_metastore, docker_container.postgres]
-}
 
-# Superset Webserver Service
-resource "docker_container" "superset" {
-  name  = "superset_app"
-  image = var.SUPERSET_IMAGE_NAME
+# Kafka Service (KRaft, single node; newspipe raw_rss topic)
+resource "docker_container" "kafka" {
+  name  = "kafka"
+  image = var.KAFKA_IMAGE_NAME
   ports {
-    internal = 8088
-    external = 8088
+    internal = 9092
+    external = 9092
   }
   env = [
-    "SUPERSET_LOAD_EXAMPLES=false",
-    "SUPERSET_SECRET_KEY=${var.SUPERSET_SECRET_KEY}",
-    "SQLALCHEMY_DATABASE_URI=postgresql://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@postgres:5432/${var.POSTGRES_DB}",
+    "KAFKA_NODE_ID=1",
+    "KAFKA_PROCESS_ROLES=broker,controller",
+    "KAFKA_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,PLAINTEXT_HOST://:9092",
+    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092",
+    "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT",
+    "KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:29093",
+    "KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
+    "KAFKA_HEAP_OPTS=-Xmx512M -Xms512M",
+    "KAFKA_LOG_DIRS=/var/lib/kafka/data",
+    "KAFKA_AUTO_CREATE_TOPICS_ENABLE=true",
+    "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
+    "KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS=1",
+    "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1",
+    "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1",
+    "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0",
+    "CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk",
   ]
   volumes {
-    volume_name    = docker_volume.sqlite_data.name
-    container_path = "/app"
+    volume_name    = docker_volume.kafka_data.name
+    container_path = "/var/lib/kafka/data"
   }
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
-  depends_on = [docker_container.superset_init, docker_container.postgres]
+  restart = "unless-stopped"
 }
 
 # --- Outputs ---
@@ -500,21 +364,17 @@ output "data_platform_access" {
   description = "Connection URLs for the main services."
   value = {
     airflow_webserver = "http://localhost:8080"
-    superset_ui       = "http://localhost:8088"
-    spark_master_ui   = "http://localhost:8081"
     trino_ui          = "http://localhost:8082"
-    minio_console     = "http://localhost:9001"
-    ollama_api        = "http://localhost:11434"
+    localstack_s3     = "http://localhost:4566"
+    kafka_bootstrap   = "localhost:9092"
   }
 }
 
 output "initial_credentials" {
-  description = "Initial login credentials for Airflow and Superset."
+  description = "Initial login credentials for Airflow."
   value = {
-    airflow_user      = var._AIRFLOW_WWW_USER_USERNAME
-    airflow_password  = var._AIRFLOW_WWW_USER_PASSWORD
-    superset_user     = var.SUPERSET_ADMIN_USERNAME
-    superset_password = var.SUPERSET_ADMIN_PASSWORD
+    airflow_user     = var._AIRFLOW_WWW_USER_USERNAME
+    airflow_password = var._AIRFLOW_WWW_USER_PASSWORD
   }
   sensitive = true
 }

@@ -216,3 +216,7 @@ __marimo__/
 *trino_data*
 *password*
 *.terraform*
+# Terraform runtime state (local, often sensitive) — use a backend instead
+*.tfstate
+*.tfstate.*
+*.tfplan
