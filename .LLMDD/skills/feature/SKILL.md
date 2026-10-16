@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Create a new spec-driven feature file under .LLMDD/spec-driven/features/ with a serial feat-<n>-<name> id, motivation synopsis, implementation status, acceptance criteria and tests. Use whenever a new feature is scoped in LLMDD v9.
+description: Create a new spec-driven feature file under .LLMDD/spec-driven/features/ with a serial feat-<n>-<name> id (bugfix-feature-<n>-<name> for bug/bugs fixes), motivation synopsis, implementation status, acceptance criteria and tests. Use whenever a new feature is scoped in LLMDD v9.
 ---
 
 # feature
@@ -17,18 +17,29 @@ development steps in LLMDD v9 — each feature flows through Advisor design,
   highest existing `feat-N-*` and use `N+1`. Never reuse a number.
 - `<short-name>` is kebab-case, imperative, ≤6 words.
 
+When the feature is a bug/bugs fix, prefix the name with `bugfix-`:
+`bugfix-feature-<n>-<short-name>.md`,
+e.g. `bugfix-feature-2-fix-compiler-parsing-and-layout.md`. The serial `<n>`
+shares the same sequence (highest `feat-N-*` or `bugfix-feature-N-*` + 1),
+and the Feature ID is the full prefixed name
+(`bugfix-feature-<n>-<short-name>`).
+
 ## File location
 
-`.LLMDD/spec-driven/features/feat-<n>-<short-name>.md`
+`.LLMDD/spec-driven/features/feat-<n>-<short-name>.md` — or
+`.LLMDD/spec-driven/features/bugfix-feature-<n>-<short-name>.md` for a
+bug/bugs fix.
 
 ## Template
 
 ```markdown
 # feat-<n>: <Title>
+(for a bug/bugs fix: # bugfix-feature-<n>: <Title>)
 
 - Status: Proposed | In Progress | Implemented
 - Created: <YYYY-MM-DD>
 - Feature ID: feat-<n>-<short-name>
+(for a bug/bugs fix: bugfix-feature-<n>-<short-name>)
 
 ## Synopsis
 
@@ -50,7 +61,9 @@ done (e.g. `1. dtr-builder emits TYPE entries for nested classes`).
 
 Executable tests proving each criterion: test file paths, commands to run,
 and expected results. Written by the Advisor, run by the code lead in
-E2E verify.
+E2E verify. For Python implementation work, include a mypy strict probe
+(e.g. `uvx mypy --strict <touched-files>`, zero errors expected) — annotation
+presence does not imply type agreement.
 ```
 
 ## Rules
@@ -60,9 +73,14 @@ E2E verify.
   status is a spec bug.
 - Acceptance criteria must be verifiable by the listed tests, one-to-one
   where possible.
+- Python features must list the `mypy --strict` zero-error probe among their
+  tests (see Tests); a Python feature without it is under-tested.
 - The feature ID (serial int) is assigned at creation and never changes,
   even if the title is reworded.
-```
+- A bug/bugs fix feature must use the `bugfix-feature-<n>-<short-name>` name
+  and ID, and must list the fixed bug ID(s) (e.g. `bug-1-...`) in its
+  Synopsis. Linkage flows fix → bugs only: never add a reverse pointer in
+  the bug file(s).
 
 ## Output
 
