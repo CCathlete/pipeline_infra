@@ -107,7 +107,7 @@ locals {
     "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
-    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://rustfs:9000', 'login': '${var.RUSTFS_ACCESS_KEY}', 'password': '${var.RUSTFS_SECRET_KEY}', 'extra': {'aws_access_key_id': '${var.RUSTFS_ACCESS_KEY}', 'aws_secret_access_key': '${var.RUSTFS_SECRET_KEY}', 'endpoint_url': 'http://rustfs:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
+    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://rustfs:${var.RUSTFS_S3_PORT}', 'login': '${var.RUSTFS_ACCESS_KEY}', 'password': '${var.RUSTFS_SECRET_KEY}', 'extra': {'aws_access_key_id': '${var.RUSTFS_ACCESS_KEY}', 'aws_secret_access_key': '${var.RUSTFS_SECRET_KEY}', 'endpoint_url': 'http://rustfs:${var.RUSTFS_S3_PORT}', 'region_name': 'us-east-1', 's3_verify': false}}",
     "POSTGRES_USER=${var.POSTGRES_USER}",
     "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
     "POSTGRES_DB=${var.POSTGRES_DB}",
@@ -252,18 +252,18 @@ resource "docker_container" "rustfs" {
   image   = var.RUSTFS_IMAGE_NAME
   command = ["/data"]
   ports {
-    internal = 9000
-    external = 9000
+    internal = var.RUSTFS_S3_PORT
+    external = var.RUSTFS_S3_PORT
   }
   ports {
-    internal = 9001
-    external = 9001
+    internal = var.RUSTFS_CONSOLE_PORT
+    external = var.RUSTFS_CONSOLE_PORT
   }
   env = [
     "RUSTFS_ACCESS_KEY=${var.RUSTFS_ACCESS_KEY}",
     "RUSTFS_SECRET_KEY=${var.RUSTFS_SECRET_KEY}",
-    "RUSTFS_ADDRESS=:9000",
-    "RUSTFS_CONSOLE_ADDRESS=:9001",
+    "RUSTFS_ADDRESS=:${var.RUSTFS_S3_PORT}",
+    "RUSTFS_CONSOLE_ADDRESS=:${var.RUSTFS_CONSOLE_PORT}",
     "RUSTFS_CONSOLE_ENABLE=true",
     "RUSTFS_OBS_LOGGER_LEVEL=error",
   ]
@@ -275,7 +275,7 @@ resource "docker_container" "rustfs" {
     name = docker_network.my_shared_network.name
   }
   healthcheck {
-    test         = ["CMD", "curl", "--fail", "http://localhost:9000/health"]
+    test         = ["CMD", "curl", "--fail", "http://localhost:${var.RUSTFS_S3_PORT}/health"]
     interval     = "10s"
     timeout      = "5s"
     retries      = 12
@@ -296,13 +296,13 @@ resource "docker_container" "rustfs_init" {
   # reach a shell.
   entrypoint = ["/bin/sh", "-c"]
   command = [<<-EOT
-    echo "Waiting for RustFS S3 API at http://rustfs:9000 ..."
-    until aws --endpoint-url http://rustfs:9000 s3api list-buckets > /dev/null 2>&1; do
+    echo "Waiting for RustFS S3 API at http://rustfs:${var.RUSTFS_S3_PORT} ..."
+    until aws --endpoint-url http://rustfs:${var.RUSTFS_S3_PORT} s3api list-buckets > /dev/null 2>&1; do
       echo "RustFS is unavailable - sleeping"
       sleep 1
     done
     echo "RustFS is ready! Ensuring bucket ${var.LAKEHOUSE_BUCKET} exists..."
-    aws --endpoint-url http://rustfs:9000 s3api create-bucket --bucket ${var.LAKEHOUSE_BUCKET} \
+    aws --endpoint-url http://rustfs:${var.RUSTFS_S3_PORT} s3api create-bucket --bucket ${var.LAKEHOUSE_BUCKET} \
       && echo "bucket ${var.LAKEHOUSE_BUCKET} created" \
       || echo "bucket ${var.LAKEHOUSE_BUCKET} already exists - continuing"
   EOT
@@ -425,8 +425,8 @@ output "data_platform_access" {
   value = {
     airflow_webserver = "http://localhost:8080"
     trino_ui          = "http://localhost:8082"
-    rustfs_s3         = "http://localhost:9000"
-    rustfs_console    = "http://localhost:9001"
+    rustfs_s3         = "http://localhost:${var.RUSTFS_S3_PORT}"
+    rustfs_console    = "http://localhost:${var.RUSTFS_CONSOLE_PORT}"
     kafka_bootstrap   = "localhost:9092"
   }
 }

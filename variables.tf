@@ -103,3 +103,15 @@ variable "LAKEHOUSE_BUCKET" {
   type        = string
   default     = "lakehouse"
 }
+
+variable "RUSTFS_S3_PORT" {
+  description = "Host and container port for the RustFS S3 API."
+  type        = number
+  default     = 9000
+}
+
+variable "RUSTFS_CONSOLE_PORT" {
+  description = "Host and container port for the RustFS console."
+  type        = number
+  default     = 9001
+}
