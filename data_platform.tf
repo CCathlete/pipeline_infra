@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------
-# dataplatform.tf: Deploys the Airflow, Kafka, and S3 (LocalStack) platform
+# dataplatform.tf: Deploys the Airflow, Kafka, and S3 (RustFS) platform
 # (newspipe sister infra; Spark and Ollama removed, Kafka added)
 # --------------------------------------------------------------------------
 
@@ -38,8 +38,8 @@ resource "docker_volume" "postgres_data" {
   }
 }
 
-resource "docker_volume" "localstack_data" {
-  name = "localstack_data"
+resource "docker_volume" "rustfs_data" {
+  name = "rustfs_data"
   lifecycle {
     # Prevents 'terraform destroy' from deleting this network.
     prevent_destroy = true
@@ -107,7 +107,7 @@ locals {
     "AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${var.POSTGRES_USER}:${var.POSTGRES_PASSWORD}@${var.POSTGRES_HOST}:5432/${var.POSTGRES_DB}",
     "AIRFLOW__CORE__LOAD_EXAMPLES=false",
     "AIRFLOW__WEBSERVER__RBAC=true",
-    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://localstack:4566', 'login': 'minioadmin', 'password': 'minioadminpassword', 'extra': {'aws_access_key_id': 'minioadmin', 'aws_secret_access_key': 'minioadminpassword', 'endpoint_url': 'http://localstack:4566', 'region_name': 'us-east-1', 's3_verify': false}}",
+    "AIRFLOW_CONN_AWS_DEFAULT={'conn_type': 'aws', 'host': 'http://rustfs:9000', 'login': '${var.RUSTFS_ACCESS_KEY}', 'password': '${var.RUSTFS_SECRET_KEY}', 'extra': {'aws_access_key_id': '${var.RUSTFS_ACCESS_KEY}', 'aws_secret_access_key': '${var.RUSTFS_SECRET_KEY}', 'endpoint_url': 'http://rustfs:9000', 'region_name': 'us-east-1', 's3_verify': false}}",
     "POSTGRES_USER=${var.POSTGRES_USER}",
     "POSTGRES_PASSWORD=${var.POSTGRES_PASSWORD}",
     "POSTGRES_DB=${var.POSTGRES_DB}",
@@ -238,25 +238,85 @@ resource "docker_container" "airflow_scheduler" {
   depends_on = [docker_container.airflow_init]
 }
 
-# LocalStack Service (S3 gateway for the lakehouse bronze path)
-resource "docker_container" "localstack" {
-  name  = "localstack"
-  image = "localstack/localstack:3.8"
+# RustFS Service (S3-compatible object store for the lakehouse bronze path)
+#
+# Replaces the former S3 gateway, which was an AWS API emulator rather than
+# real storage. RustFS is genuine S3-compatible object storage, so bronze rows
+# land on actual disk instead of in a mock.
+#
+# The image runs as non-root uid/gid 10001. A NAMED volume is created owned by
+# that uid, so no host-side chown is required; bind-mounting a host directory
+# instead would need `chown -R 10001:10001` first.
+resource "docker_container" "rustfs" {
+  name    = "rustfs"
+  image   = var.RUSTFS_IMAGE_NAME
+  command = ["/data"]
   ports {
-    internal = 4566
-    external = 4566
+    internal = 9000
+    external = 9000
+  }
+  ports {
+    internal = 9001
+    external = 9001
   }
   env = [
-    "SERVICES=s3",
+    "RUSTFS_ACCESS_KEY=${var.RUSTFS_ACCESS_KEY}",
+    "RUSTFS_SECRET_KEY=${var.RUSTFS_SECRET_KEY}",
+    "RUSTFS_ADDRESS=:9000",
+    "RUSTFS_CONSOLE_ADDRESS=:9001",
+    "RUSTFS_CONSOLE_ENABLE=true",
+    "RUSTFS_OBS_LOGGER_LEVEL=error",
   ]
   volumes {
-    volume_name    = docker_volume.localstack_data.name
-    container_path = "/var/lib/localstack"
+    volume_name    = docker_volume.rustfs_data.name
+    container_path = "/data"
   }
   networks_advanced {
     name = docker_network.my_shared_network.name
   }
+  healthcheck {
+    test         = ["CMD", "curl", "--fail", "http://localhost:9000/health"]
+    interval     = "10s"
+    timeout      = "5s"
+    retries      = 12
+    start_period = "20s"
+  }
   restart = "unless-stopped"
+}
+
+# One-shot init: create the bronze bucket. The old S3 gateway shipped an
+# `awslocal` helper that made this a one-liner; RustFS has no equivalent, so
+# this drives the reference S3 client against the endpoint. Idempotent -- an
+# already-existing bucket is not treated as an error. Mirrors airflow_init.
+resource "docker_container" "rustfs_init" {
+  name  = "rustfs_init"
+  image = "amazon/aws-cli:latest"
+  # amazon/aws-cli ships an `aws` ENTRYPOINT, so `command` alone would be
+  # passed to it as arguments ("aws sh -c ..."). Override the entrypoint to
+  # reach a shell.
+  entrypoint = ["/bin/sh", "-c"]
+  command = [<<-EOT
+    echo "Waiting for RustFS S3 API at http://rustfs:9000 ..."
+    until aws --endpoint-url http://rustfs:9000 s3api list-buckets > /dev/null 2>&1; do
+      echo "RustFS is unavailable - sleeping"
+      sleep 1
+    done
+    echo "RustFS is ready! Ensuring bucket ${var.LAKEHOUSE_BUCKET} exists..."
+    aws --endpoint-url http://rustfs:9000 s3api create-bucket --bucket ${var.LAKEHOUSE_BUCKET} \
+      && echo "bucket ${var.LAKEHOUSE_BUCKET} created" \
+      || echo "bucket ${var.LAKEHOUSE_BUCKET} already exists - continuing"
+  EOT
+  ]
+  env = [
+    "AWS_ACCESS_KEY_ID=${var.RUSTFS_ACCESS_KEY}",
+    "AWS_SECRET_ACCESS_KEY=${var.RUSTFS_SECRET_KEY}",
+    "AWS_DEFAULT_REGION=us-east-1",
+  ]
+  networks_advanced {
+    name = docker_network.my_shared_network.name
+  }
+  restart    = "no"
+  depends_on = [docker_container.rustfs]
 }
 
 # Trino Service
@@ -281,7 +341,7 @@ resource "docker_container" "trino" {
     name = docker_network.my_shared_network.name
   }
   restart    = "unless-stopped"
-  depends_on = [docker_container.localstack]
+  depends_on = [docker_container.rustfs]
 }
 
 
@@ -365,7 +425,8 @@ output "data_platform_access" {
   value = {
     airflow_webserver = "http://localhost:8080"
     trino_ui          = "http://localhost:8082"
-    localstack_s3     = "http://localhost:4566"
+    rustfs_s3         = "http://localhost:9000"
+    rustfs_console    = "http://localhost:9001"
     kafka_bootstrap   = "localhost:9092"
   }
 }

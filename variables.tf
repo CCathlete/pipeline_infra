@@ -76,3 +76,30 @@ variable "KAFKA_IMAGE_NAME" {
   default     = "apache/kafka:3.7.0"
 }
 
+
+# RustFS Object Store (S3-compatible lakehouse for the bronze path)
+
+variable "RUSTFS_ACCESS_KEY" {
+  description = "Root access key for the RustFS object store."
+  type        = string
+  default     = "minioadmin"
+}
+
+variable "RUSTFS_SECRET_KEY" {
+  description = "Root secret key for the RustFS object store."
+  type        = string
+  sensitive   = true
+  default     = "minioadminpassword"
+}
+
+variable "RUSTFS_IMAGE_NAME" {
+  description = "Docker image for RustFS, the S3-compatible lakehouse."
+  type        = string
+  default     = "rustfs/rustfs:latest"
+}
+
+variable "LAKEHOUSE_BUCKET" {
+  description = "Bronze bucket ensured on first apply by the rustfs_init container."
+  type        = string
+  default     = "lakehouse"
+}
