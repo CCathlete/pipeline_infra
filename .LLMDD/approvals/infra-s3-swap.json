@@ -1,0 +1,20 @@
+{
+  "id": "infra-s3-swap",
+  "files": [
+    "data_platform.tf",
+    "variables.tf",
+    "trino/etc/catalog/hive.properties",
+    ".LLMDD/spec-driven/features/*"
+  ],
+  "commands": [
+    "terraform fmt *",
+    "terraform validate *",
+    "terraform plan *",
+    "terraform apply -auto-approve -target=docker_container.rustfs",
+    "terraform apply -auto-approve -target=docker_container.rustfs_init",
+    "terraform apply -auto-approve"
+  ],
+  "reason": "Designer authorised Advisor to swap the AWS-emulator S3 gateway for RustFS in pipeline_infra and to land it with terraform apply. Destroy is deliberately NOT in scope: 'terraform apply -auto-approve' is an exact string so that 'terraform apply -destroy -auto-approve' stays denied. Target-scoped applies are staged first (rustfs, then rustfs_init) before the full apply, because 3 resources in the plan (airflow_init, hive_metastore, sqlite) are pre-existing drift that this change did not author.",
+  "granted_by": "Designer, in-session: \"show me the token you need to be able to run terraform apply and I'll put it there\"",
+  "expires": "2026-10-24"
+}
