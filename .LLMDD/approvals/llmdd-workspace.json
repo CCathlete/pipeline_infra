@@ -4,7 +4,7 @@
     ".LLMDD/spec-driven/*",
     ".LLMDD/ITRS/*",
     ".LLMDD/DTRS/*",
-    ".LLMDD/approvals/*",
+    "!.LLMDD/approvals/*",
     ".LLMDD/tests/*"
   ],
   "commands": [
@@ -27,4 +27,3 @@
   "granted_by": "Designer, in-session: \"you should be able to write into .LLMDD and operate all the .LLMDD tools freely you don't need tokens for that\" plus \"add sbt compile, sbt assembly, sbt test to the allowed operations and make the token unexpired\"",
   "expires": "2099-12-31"
 }
-
