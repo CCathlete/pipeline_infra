@@ -1,0 +1,18 @@
+# CU FEEDBACK: cu-002
+CU_ID=cu-002
+CODER_NAME=cod-2
+DATE=2026-10-20
+CLARITY_RATING=5
+AMBIGUOUS_LINES=step 3 line references cu_frame_dir but no step binds it; resolved minimally at the single call site as `cu_frame_dir: Path | None = cu_file if cu_file.is_dir() else None` so folder refs parse their IMPLEMENTATION_STEPS.itr and legacy single-frame refs degrade to parse_no_touch("") exactly as the ternary implies
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none — all four code changes inserted verbatim; monadic Ok/Err error flow preserved (breach returns Err, caller already handles it); every new binding explicitly annotated; no Any, no try-except added; only .LLMDD/tools/run-waves.py modified
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=0.05
+COMMIT_MESSAGE=Implement cu-002: enforce CU no-touch boundary at run time in run-waves.py — import shared cu_scope vocabulary (NoTouch, is_touched, parse_no_touch), add _cu_no_touch helper parsing a CU frame folder's Do-NOT-touch list, thread no_touch as an explicit run_coder parameter (stash_ref default kept), and fail the CU via Err naming offending paths when files_changed intersects the parsed patterns, including glob clauses such as any Scala source; conforming runs and --dry-run unchanged. py_compile green after each edit, RUNNER_PARSER_AGREE printed (exit 0), dry-run exits 0 listing cu-001/cu-002/cu-003.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=Steps 1-4: python3 -m py_compile .LLMDD/tools/run-waves.py exits 0 after each edit. Step 5: RUNNER_PARSER_AGREE printed, exit 0 (shared parser agrees between runner and validator on the shipped bugfix-feature-5 frame). Step 6: --dry-run exits 0 and the plan lists cu-001 (wave 1), cu-002 (wave 2), cu-003 (wave 3). Structural acceptance: step 4 block sits between the existing files_changed assignment (lines 1139-1143) and the succeeded determination (line 1156). Extra runtime sanity (read-only): _cu_no_touch parses this CU's own 10-entry no-touch list with 0 unparsed entries; simulated breach matches glob clause "any Scala source" on itr-compiler/src/main/scala/A.scala while README.md is untouched; conforming diff (only .LLMDD/tools/run-waves.py) produces no breach; a frame-file (non-folder) ref degrades to the empty set without crashing. Negative-half runtime proof (breaching Coder run exits non-zero naming the path) is exercised by the wave runner dispatch path per the CU stop condition; code lead verifies at e2e. git diff for this CU touches only .LLMDD/tools/run-waves.py (+29/-1).

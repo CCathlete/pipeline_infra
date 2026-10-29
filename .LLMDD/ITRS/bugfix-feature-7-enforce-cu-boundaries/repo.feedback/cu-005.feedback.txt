@@ -1,0 +1,17 @@
+CU_ID=cu-005
+CODER_NAME=cod-5
+DATE=2026-10-22
+CLARITY_RATING=5
+AMBIGUOUS_LINES=The fenced code block header comment in IMPLEMENTATION_STEPS contains literal `u2500` escape sequences (itr-compiler escaping of U+2500 box-drawing characters); decoded them to actual `─` characters to match existing section-header style in run-waves.py. Comment-only, no behavioral impact.
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=Comment line in appended block renders `u2500` escapes as U+2500 box-drawing characters instead of pasting them literally; matches pre-existing `# ── ... ──` header convention of the target file. No code, typing, or behavioral deviation.
+ARCHITECTURE_DEVIATION.SEVERITY=TRIVIAL
+TIME_TAKEN_MINUTES=10
+AI_CREDITS_USED=30
+COMMIT_MESSAGE=feat(run-waves): add per-CU change attribution (cu-005) — measure each CU's change set from its own opencode JSON logs instead of the shared wave diff. Adds CoderWrites/WaveWrites frozen slotted dataclasses, coder_writes() (parses every attempt-*.log for a prefix; extracts paths from write/edit/patch tool events via part.state.input.path and from shell commands via redirection/tee/cp/mv/touch/mkdir -p regex plus repo-rooted quoted paths), wave_writes() (unions git diff --name-only against base_ref with git ls-files --others --exclude-standard untracked, subtracts baseline_dirty), and attribute_writes() (attributes wave-changed paths to claiming CUs, residual reported as unattributed). Adds Final to the typing import. Block inserted immediately before the Live-streaming section.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=Both Prove commands pass (ast.parse ok). Module imports cleanly with all 13 new symbols present (CoderWrites, WaveWrites, coder_writes, wave_writes, attribute_writes, WRITE_TOOLS, _SHELL_WRITE, _QUOTED_REPO_PATH, _text_of, _tool_input, _shell_candidates, _tool_candidates, _repo_relative). Acceptance: T005.1 PASS (coder_writes read 2 attempt logs, extracted write/edit/patch paths, shell redirect src/c.txt, quoted .LLMDD/tools/foo.py; deduped repeats, dropped out-of-repo path, skipped read-tool event and unparseable line). T005.2 PASS (wave_writes against HEAD returned the 3 dirty files incl. .LLMDD/tools/run-waves.py; subtracting full set yields empty; partial baseline_dirty correctly excluded). T005.3 PASS (attribute_writes preserved per-CU sets; unattributed residual ('z.py',); fully-attributed case yields empty residual). Diff confined to .LLMDD/tools/run-waves.py: 1 line import change + 113-line block insertion; no Do-NOT-touch files modified.

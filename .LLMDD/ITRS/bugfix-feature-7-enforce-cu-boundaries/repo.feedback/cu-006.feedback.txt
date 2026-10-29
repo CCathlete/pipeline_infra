@@ -1,0 +1,17 @@
+CU_ID=cu-006
+CODER_NAME=cod-2
+DATE=2026-10-22
+CLARITY_RATING=4
+AMBIGUOUS_LINES=step 11 says "the two early returns of main_async" but only one bare return exists (dry-run path); changed that one to return 0, the second return 0 comes from step 10's convergence block. Steps 5/6 fenced blocks carry mangled unicode escapes (u2500 for the section banner, u2014 for em dash) where the file's existing style uses the real glyphs.
+MISSING_CONTEXT=step 10 annotates run_written: set[str] at the call site but never initializes it, so run_written.update(written) would raise NameError on wave 1; resolved by adding run_written: set[str] = set() before the wave loop next to tracker/baseline_dirty. Step 10's fragment also omits the pre-existing wave_files_changed/all_passed annotations; both retained to satisfy ARCH.PYTHON.EXPLICIT_DECLARATION.
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none functional — all 11 steps implemented exactly as specified (import expansion, folder-or-file _cu_no_touch gating, run_coder loses no_touch and uses coder_writes attribution, enforcement block before run_wave_parallel, dispatch loop cleaned, enforcement pass after coder-await loop, 3-tuple returns, main_async exit codes, dry-run return 0). Only restoration of mangled unicode escapes to intended glyphs in one comment banner and one docstring line, matching existing file style.
+ARCHITECTURE_DEVIATION.SEVERITY=TRIVIAL
+TIME_TAKEN_MINUTES=35
+AI_CREDITS_USED=60
+COMMIT_MESSAGE=feat(run-waves): enforce CU boundaries per measured wave (cu-006) — run_coder's change set now comes from its own attributed tool-call writes (coder_writes) instead of the wave-wide git diff, its no_touch param and in-loop breach check removed; new enforcement block applies three rules (own no-touch hit, shared-write collision, unattributed change against any guard) with fail-closed unenforceable guards, breach printout plus boundary-breaches.txt report, run once per wave after all coders finish and before per-CU leads; _cu_no_touch gates flat frame files like folders with symlink-resolved patterns; run_wave_parallel takes baseline_dirty and returns written paths; main_async returns 1 unless final status is CONVERGED (dry-run stays 0)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=All 11 Prove commands pass (ast.parse ok x6; grep counts: "touched its no-touch list"=0, "no_touch: NoTouch"=0, "enforce_boundary"=2, "return wave_files_changed, all_passed, written"=1, "return 0"=2; py_compile ok). Acceptance suite 19/19 PASS covering T006.1-T006.7: T006.1 no-touch breach printed and written to boundary-breaches.txt with SCOPE/RULE/PATH; T006.2 two CUs on one path both fail shared-write; T006.3 unattributed hit yields scope=wave rule=unattributed:cu-001; T006.4 patternless guard fails closed with unenforceable; T006.5 flat .itr frame and per-CU folder produce identical guards; T006.6 coder_writes keeps sibling writes out of another CU's files_changed and routes ghost writes to unattributed; T006.7 real main_async run returns 1 on NEEDS_ATTENTION and 0 on CONVERGED (run_wave_parallel/run_code_lead faked, exit path live). Stop condition met: module parses, enforce_boundary called once per wave, process exits 1 when not CONVERGED.

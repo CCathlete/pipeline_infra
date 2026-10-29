@@ -1,0 +1,17 @@
+CU_ID=cu-003
+CODER_NAME=cod-3
+DATE=2026-10-10
+CLARITY_RATING=4
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=split-derived component format from cu-002 not defined in this CU; inferred header-position section markers in content
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=60
+COMMIT_MESSAGE=Enforce flat-CU fix at compile time (cu-003): batch-level legacy exemption plus all-regular-CU component validation with split-derived content headers; new-schema detection covers effective keys; fail-fast before writes
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=T6 (new-schema batch omitting ACCEPTANCE fails naming cu-bad + acceptance, no out/cu-bad.itr nor out/cu-bad/cu-bad.itr); T6b (fully-empty regular CU in new-schema batch fails); T4 legacy component-less batch keeps cu-old/cu-old.itr, no root flat, no component files; T3 synopsis-absent still fails; split-derived content headers satisfy validation; suites Feat1ValidationTest + Feat1LayoutTest + CompileTest + RequiredPartsValidationTest: 25 tests passed

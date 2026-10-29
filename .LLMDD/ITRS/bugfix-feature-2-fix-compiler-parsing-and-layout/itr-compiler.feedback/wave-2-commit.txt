@@ -1,0 +1,43 @@
+Fix: inline-section splitter + enforcement agreement (wave 2: cu-002, lead)
+
+cu-002 — JSONFormat: split a regular CU's inline labeled sections
+(REQUIREMENTS:, COORDINATES:, IMPLEMENTATION_STEPS:, ACCEPTANCE:) into
+CU.components after content extraction, so Advisor-drafted batches compile
+to a cu-<id>/ folder with the four component files and no
+cu-<id>/cu-<id>.itr blob. Runs only when the CU has no explicit
+"components" object (explicit wins) and only for RegularCU; if all four
+labels are absent the map stays empty and the legacy single-frame path is
+preserved. Closes bug-2 layout criterion 3 and enables criterion 4.
+FileSystem, validation, Compile and YAMLFormat untouched by cu-002.
+
+Lead (cross-CU repairs found while verifying waves 1+2 together):
+- CU.scala: add CU.sectionLabels / CU.contentSectionKeys — one shared
+  definition of the four content-bar labels, used by JSONFormat's splitter
+  and by validation (infrastructure and application both depend on domain;
+  no other shared home is layering-legal).
+- RequiredPartsValidation: effectiveComponentKeys now reads exactly the
+  cu.components map FileSystem writes from (split-derived keys arrive there
+  via cu-002, explicit keys via cu-001), replacing the second content
+  re-scan whose `key.itr` mid-line leniency let validation pass a CU the
+  writer emitted as a blob (wave-1 watch item 2 — enforcement/writer can no
+  longer disagree). validateSynopsis is self-gating: without synopsis data
+  it fires only for batches carrying explicit "components" keys (feat-1
+  criteria 9-10 schema opt-in), so synopsis-less Advisor batches — the
+  bug-2 repro and feat-1's own batch.json — compile (feature tests T2/T3),
+  while the sbt contract "fail naming MAX_ATTEMPTS when synopsis is absent"
+  for explicit-components batches is preserved.
+- Compile: detection comments updated; throw-before-write behaviour
+  unchanged.
+
+Verified: sbt test 87/87 green (21 suites); feature tests T1 (both key
+orders, exit 0, identical outputs), T2 (bug-2 repro -> four component
+files, no blob), T3 (feat-1 batch.json -> four files per cu-001..005,
+zero cu-*.itr), T4 (legacy in-folder frame), T6a/T6b (missing ACCEPTANCE
+named, exit 1, nothing written) all PASS; agreement probes (prose CU
+rejected instead of silently blobbed; partial components report exactly
+the absent keys) PASS. No test file modified. Tools binary rebuilt
+(sbt assembly) and .LLMDD/tools/itr-compiler refreshed (gitignored).
+Iterations: 2 of 3.
+
+Stacks on wave-1's uncommitted changes (wave-1-commit.txt); squash or
+commit separately at the final wave lead's discretion. Not pushed.

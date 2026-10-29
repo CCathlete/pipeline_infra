@@ -1,0 +1,17 @@
+CU_ID=cu-002
+CODER_NAME=cod-1
+DATE=2026-10-17
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none — one mechanical note: the step-5 proof "git status --short -- .LLMDD/spec-driven/ids.txt prints nothing" cannot print nothing before the code-lead commit, because a newly created counter is untracked (git prints "??" for it). With RULE.COD.COMMIT_SCOPE=PREPARE_ONLY I may not commit. The proof's intent — dry runs leave the counter unmodified — was proven instead by identical sha256 of ids.txt before and after both dry runs plus a bugfix-prefix dry run. The literal proof goes green once the code lead commits the counter.
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=30
+COMMIT_MESSAGE=feat(cu-002): route bug/feature skill id allocation through next-spec-id.py and seed repo counter ids.txt (bug=5, feature=6) — replaced the Naming sections of .LLMDD/skills/bug/SKILL.md and .LLMDD/skills/feature/SKILL.md with allocator instructions (directory-scan wording removed), updated both frontmatter descriptions to describe allocation by .LLMDD/tools/next-spec-id.py unique per repository across branches, and created .LLMDD/spec-driven/ids.txt seeded bug=5 feature=6; template/file-location/rules sections untouched
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=All acceptance commands green: (1) grep -c "highest existing" on bug and feature SKILL.md → 0 and 0 (two-file grep prints two lines reading 0); (2) grep -c "next-spec-id.py" → bug:2, feature:2 (non-zero); (3) next-spec-id.py --check → exit 0, prints nothing; (4) --kind feature --dry-run → "feat-7-"; (5) --kind bug --dry-run → "bug-6-"; (6) counter untouched: sha256 of ids.txt identical before/after all dry runs (also verified --prefix bugfix-feature- dry run prints "bugfix-feature-7-"); (7) ids.txt content exactly "bug=5\nfeature=6" matching the existing spec tree (highest bug file = 5, highest feature file = 6); (8) git diff confirms only the two skill files changed within my scope, naming/frontmatter only. Note: git status --short -- ids.txt prints "?? .LLMDD/spec-driven/ids.txt" solely because the file is new and untracked pending the code-lead commit. Out-of-scope working-tree changes observed (init-repo/SKILL.md, tools/README.md modified; allocator tools untracked) belong to cu-001/cu-003 and were not touched by me.

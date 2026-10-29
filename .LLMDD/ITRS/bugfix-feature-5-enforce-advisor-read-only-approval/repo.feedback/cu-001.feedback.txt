@@ -1,0 +1,17 @@
+CU_ID=cu-001
+CODER_NAME=cod-1
+DATE=2026-10-16
+CLARITY_RATING=4
+AMBIGUOUS_LINES=Step 1 line anchors describe the pre-state permission block as lines 4-7 with the closing fence at line 8; in HEAD the blanket block occupied lines 4-6 with the closing --- at line 7. Intent unambiguous from the exact target block plus T1 probes.
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none — final frontmatter matches the CU target block byte-for-byte (cmp-verified); hardlink twin intact, single inode 75140 serves both .opencode/agents/llmdd/advisor.md and .LLMDD/agents/advisor.md. Note for code lead: the working tree already carried this uncommitted cu-001 edit from a prior interrupted wave run (prep commit 7c369c8 raised cu-timeout after a 300s kill); this run verified the end state byte-exactly and ran all probes instead of re-applying an identical edit. The Approval gate body section (cu-002 scope) also pre-exists in the file and was left untouched.
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=8
+AI_CREDITS_USED=12
+COMMIT_MESSAGE=bugfix-feature-5 cu-001: enforce Advisor read-only frontmatter — replace blanket bash allow with read-only allowlist (ls, cat, rg, git status, git diff, git log) plus default-ask wildcard, keep edit: deny, in .opencode/agents/llmdd/advisor.md (hardlink twin .LLMDD/agents/advisor.md, same inode)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=T1 green: grep -c "bash: allow" = 0; grep -c '"*": ask' = 1; edit: deny at line 5; six read-only rules at lines 7-12 in required order (ls, cat, rg, git status, git diff, git log); trailing ask wildcard at line 13; sed -n '1,20p' shows exact frontmatter with no blanket bash allow. Byte-exact block comparison via cmp: MATCH. Hardlink twins identical (cmp clean, inode 75140). No-touch list respected: .opencode/agents/llmdd/coder.md, .opencode/agents/verifier.md, .opencode/opencode.json, Scala sources, Python tools untouched; .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md carries a pre-existing modification not made or touched by this session (cu-002 scope).

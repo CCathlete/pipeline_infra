@@ -1,0 +1,7 @@
+SCOPE=wave
+RULE=unattributed:cu-001
+PATH=.LLMDD/ITRS/feat-9-enforce-cu-boundary-redirect.batch.json
+
+SCOPE=wave
+RULE=unattributed:cu-001
+PATH=.LLMDD/tests/test_cu_boundary.py

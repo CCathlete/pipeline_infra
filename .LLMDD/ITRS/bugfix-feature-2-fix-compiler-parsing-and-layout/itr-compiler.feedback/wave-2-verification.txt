@@ -1,0 +1,165 @@
+WAVE 2 VERIFICATION REPORT
+Feature: bugfix-feature-2-fix-compiler-parsing-and-layout
+Wave: 2 (cu-002) — code lead (verifier session)
+Date: 2026-10-10
+Iterations used: 2 of 3 (iteration 1 found 3 cross-CU failures; repaired; iteration 2 green; final confirmation run green)
+
+== 1. FEEDBACK / ESCALATION PICKUP ==
+cu-002: STATUS=COMPLETED, VERIFICATION_RESULT=PASSED (feedback
+itr-compiler.feedback/cu-002.feedback.txt, cod-2, 15 min). No ESCALATION.
+No CU frame was picked up for re-implementation by the lead.
+
+However cu-002's feedback flagged one cross-CU item explicitly left to the
+lead: the exact bug-2 repro /tmp/batch_inline.json (no synopsis) parses to
+4 components but hard-fails on synopsis enforcement added by the
+uncommitted wave-1 cu-003 changes. That, plus wave-1's watch item 2
+(splitter/detector agreement), were the two lead repairs below. Both are
+cross-CU interactions inside already-assigned coordinates — not design
+changes, and no test file was touched.
+
+== 2. CODE UNDER TEST (working tree, uncommitted) ==
+Includes wave-1 changes (cu-001, cu-003) plus wave-2 (cu-002) plus lead
+repairs; all four files are main sources, +249/-29 vs HEAD:
+
+- infrastructure/parsers/JSONFormat.scala   (cu-001 key-order scan; cu-002
+  splitInlineSections + explicit-components-wins; lead: labels now come
+  from CU.sectionLabels)
+- application/services/RequiredPartsValidation.scala (cu-003 enforcement;
+  lead: see repair A/B below)
+- application/services/Compile.scala        (cu-003 throw-before-write;
+  lead: comments updated to the repaired detection rules)
+- domain/models/CU.scala                    (LEAD-ONLY: CU.sectionLabels +
+  CU.contentSectionKeys, the shared label list)
+
+Test files: NONE modified (git status shows only the four main sources
+above). Domain placement of the shared label list is required by the layer
+rules: JSONFormat (infrastructure) and RequiredPartsValidation (application)
+must both see the same label list, and application may not import
+infrastructure. No CU coordinate covers a shared home, so the lead owns this
+24-line addition; it moves no existing behaviour.
+
+Tools binary: rebuilt with sbt assembly; .LLMDD/tools/itr-compiler
+refreshed (md5 a86cb864290e5dcb2f8573f78bcb56fd, identical to
+itr-compiler/itr-compiler). Both are gitignored, not part of the commit.
+
+== 3. CROSS-CU ISSUES FOUND AND REPAIRED ==
+
+REPAIR A (iteration 1, T2+T3 red — the item cu-002 handed off):
+After cu-002's splitter ran, any synopsis-less batch with inline sections
+became "new-schema" and Compile's validateSynopsis threw
+"SYNOPSIS is missing" before any write. That broke feature tests T2
+(bug-2 minimal repro) and T3 (feat-1 batch.json, which is a top-level
+array with no synopsis key) — both must exit 0 per bugfix-feature-2
+criteria 3-4, while Feat1ValidationTest "should fail naming MAX_ATTEMPTS
+when synopsis is absent (T3)" pins the opposite for a batch that supplies
+an explicit "components" object.
+
+Resolution (no design change, satisfies both specs):
+- validateSynopsis is now self-gating: with synopsis data present it
+  validates the content as before; with no synopsis data it only fails
+  when some regular CU carries component keys NOT explained by inline
+  content sections — i.e. keys that came from an explicit "components"
+  object (feat-1 schema opt-in, criteria 9-10). Split-derived-only
+  batches and legacy batches are exempt.
+- Explicit-vs-split is decided by CU.contentSectionKeys(content), which
+  uses the exact same label list the JSON splitter uses.
+
+REPAIR B (iteration 1, wave-1 watch item 2 — splitter/detector agreement):
+RequiredPartsValidation re-scanned content with a second, more generous
+detector (markdown headers + a mid-line `key.itr` substring check) and
+unioned it into effectiveComponentKeys. That let validation pass a CU the
+writer would emit as a blob: a prose CU mentioning COORDINATES.itr /
+REQUIREMENTS.itr / IMPLEMENTATION_STEPS.itr / ACCEPTANCE.itr compiled
+exit 0 and wrote cu-<id>/cu-<id>.itr inside a new-schema batch
+(pass-with-blob disagreement), and partial key sets could be "passed" while
+only some component files were written.
+
+Resolution: effectiveComponentKeys now reads exactly cu.components — the
+map FileSystem.write branches on and writes one file per key. Split-derived
+keys need no separate detection because cu-002 already puts them in
+cu.components; explicit keys are parsed by cu-001's parser. The content
+re-scan (splitContentKeys, incl. the `.itr` leniency) is deleted.
+Validation and writer can no longer disagree by construction.
+
+== 4. VERIFICATION RESULTS (final state) ==
+
+T5 — sbt test from itr-compiler/: 87/87 green, 21 suites, 0 failed,
+0 aborted. PASS (rerun after final edit).
+
+T1 — bug-1 repro, criteria 1-2:
+- content-first and cu-id-first batches both exit 0, "Compiled 3 CU(s)".
+- Outputs byte-identical after normalising # TIMESTAMP lines. PASS.
+- `sbt "testOnly *JSONFormat* -- -z key-order"` unit test still absent —
+  assigned to cu-004 (wave 3) IMPLEMENTATION_STEPS; not a wave-2 gap.
+
+T2 — criterion 3, bug-2 minimal repro (/tmp/batch_inline.json, exact
+spec content, no synopsis): exit 0; cu-001/{COORDINATES,REQUIREMENTS,
+IMPLEMENTATION_STEPS,ACCEPTANCE}.itr all exist; no cu-001/cu-001.itr,
+no root cu-001.itr. PASS (was FAIL before repair A).
+
+T2s — same batch with a synopsis added (cu-002 coder's variant): exit 0,
+four component files + root SYNOPSIS.itr; split bodies correct
+(REQUIREMENTS body "build X.", ACCEPTANCE body "test T1 green."). PASS.
+
+T3 — criterion 4, feat-1-per-cu-itr-directories/batch.json into an empty
+folder: exit 0; four component files for each of cu-001..cu-005;
+root ARCH.itr/LEGEND.itr; `find -name "cu-*.itr" | wc -l` = 0; no root
+cu-*.itr. PASS (was FAIL before repair A).
+Note: batch.json is a top-level array carrying no synopsis data, so
+SYNOPSIS.itr is not regenerated; criterion 4's enumerated assertions
+(four files per CU, root ARCH/LEGEND, zero blobs) are all met — the
+checked-in SYNOPSIS.itr there is Advisor-authored, not batch-derived.
+
+T4 — criteria 5-6, legacy batch (no synopsis, no sections, no
+components): exit 0; cu-old/cu-old.itr exists; no root cu-old.itr; no
+component files; ARCH/LEGEND at root. PASS.
+
+T6a — criterion 7, new-schema batch (synopsis) with cu-bad missing
+ACCEPTANCE: exit 1; stderr names "cu-bad" and "acceptance"; zero files
+written (fail-fast before any write). PASS.
+
+T6b — criterion 7, synopsis-less inline batch with cu-bad missing
+ACCEPTANCE (split-derived enforcement, cu-003's "cover split-derived"
+requirement): exit 1; stderr names cu-bad + acceptance; nothing written.
+PASS.
+
+T-explicit — Feat1ValidationTest T3 contract through the CLI: batch with
+an explicit "components" object and no synopsis: exit 1 naming
+MAX_ATTEMPTS. PASS (this is what repair A had to preserve).
+
+AGREE — wave-1 watch item 2 regression probe (prose CU mentioning the four
+component filenames inside a synopsis-bearing batch): now exit 1 naming
+cu-prose + all four missing components, zero files written. No
+pass-with-blob state. PASS.
+
+AGREE2 — partial explicit components (2 of 4) in a new-schema batch:
+exit 1 naming exactly acceptance + implementation-steps (no false
+positive on the present keys), nothing written. PASS.
+
+Suite total: 10/10 CLI checks PASS + sbt 87/87 PASS.
+
+== 5. WATCH ITEMS FOR WAVE 3 (cu-004) ==
+1. YAML inline sections: YAMLFormat parses only explicit components, so a
+   synopsis-bearing YAML batch whose CUs carry inline sections now fails
+   loud with "missing component" x4 (probe: exit 1, nothing written).
+   Same outcome as wave-1's code — repair B changed nothing here — but
+   criterion 3 says "a regular CU whose content carries the four labeled
+   sections compiles to a folder" without restricting the format. cu-004
+   owns YAMLFormat: either add the same splitter there or let its tests
+   pin the current loud-fail.
+2. The key-order unit test (`testOnly *JSONFormat* -- -z key-order`) and
+   the section-splitting / end-to-end integration tests are still absent —
+   explicitly assigned to cu-004.
+3. YAMLFormat has no key-order assumption (it scans by key name); cu-004
+   should confirm and record that rather than assume a fix is needed.
+
+== 6. CONVERGENCE ==
+Iterations: 2 of 3.
+Iteration 1 failures: T2 (exit 1, synopsis enforcement), T3 (exit 1, same),
+AGREE (pass-with-blob disagreement). Repairs: A + B above (4 files, main
+sources only, 0 test files touched).
+Iteration 2: 10/10 CLI + 87/87 sbt green. Confirmation run green.
+STATUS: PASS — wave-2 CUs verified, cross-CU issues repaired, all feature
+tests for cu-001/cu-002/cu-003 green. Not committed, per instruction
+(wave-2 commit message prepared in wave-2-commit.txt; final wave lead
+commits).

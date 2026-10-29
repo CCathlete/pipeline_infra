@@ -1,0 +1,17 @@
+CU_ID=cu-001
+CODER_NAME=cod-1
+DATE=2026-10-10
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=30
+COMMIT_MESSAGE=Fix JSONFormat.parse to accept CU object keys in any order (cu-001)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=sbt testOnly *JSONFormat* 4/4 green; broader suites JSONFormat+YAMLFormat+Compile+CompileCommand 17/17 green; CLI repros with fresh sbt-assembly binary both print Compiled 3 CU(s) exit 0 (cu-id-first and content-first batches, outputs identical except timestamps); edge cases verified (reordered keys with multiline/escaped content, cu-type arch/legend, synopsis object form). Only modified itr-compiler/src/main/scala/itrcompiler/infrastructure/parsers/JSONFormat.scala (parse rewritten as per-object scan reusing findObjectExtent/parseJsonString, docstring updated); serialize shape and parseComponentsForCU/parseSynopsis untouched; YAMLFormat/FileSystem/RequiredPartsValidation/Compile untouched. NOTE: .LLMDD/tools/itr-compiler binary is stale (pre-fix build); code lead should rebuild via sbt assembly and refresh it before running feature test T1 against the tools binary.

@@ -1,0 +1,17 @@
+CU_ID=cu-004
+CODER_NAME=cod-4
+DATE=2026-10-10
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=40
+COMMIT_MESSAGE=cu-004: YAML parity proven order-independent plus regression tests (JSON key-order, inline splitter, inline-batch layout)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=sbt test: 93 suites green (87 pre-existing + 6 new); sbt testOnly JSONFormat -z key-order: 1 passed; sbt testOnly Cu004InlineBatchLayoutTest: 1 passed; Feat1Layout/Override/Validation (T1/T4/T2/T3/criterion-11): 7 passed; YAML reordered-keys CLI compile exit 0 with 3 CUs. YAMLFormat.scala verified order-independent via regex extraction (no key-order assumption) so no production change per CU step 1.

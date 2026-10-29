@@ -1,0 +1,59 @@
+Wave 2 verification: PASSED (converged on iteration 0).
+Feature: feat-6-global-spec-id-numbering
+Waves covered: wave 1 (cu-001) + wave 2 (cu-002, cu-003).
+Date: 2026-10-17
+Role: Code Lead (Verifier)
+
+# 1. PER-CU STATUS
+
+CU_ID=cu-001 | STATUS=CONVERGED | IMPLEMENTED_BY=cod-1 | VERIFICATION_RESULT=PASSED
+  Scope: new files only — .LLMDD/tools/next-spec-id.py, .LLMDD/tools/test_next_spec_id.py
+  Proofs: py_compile OK; fixture test PASS exit 0; sibling branches get different bug ids (bug-6- vs bug-7-); clean --check exit 0; injected duplicate serial exit 1; dry-run prints feat- id without writing; mypy --strict clean; no typing.Any; explicit annotation at first binding; slotted frozen dataclasses.
+  Escalations: none
+
+CU_ID=cu-002 | STATUS=CONVERGED | IMPLEMENTED_BY=cod-1 | VERIFICATION_RESULT=PASSED
+  Scope: .LLMDD/skills/bug/SKILL.md, .LLMDD/skills/feature/SKILL.md (naming + frontmatter), .LLMDD/spec-driven/ids.txt (new)
+  Proofs: grep -c "highest existing" -> 0 on both skills (two lines reading 0); grep -c "next-spec-id.py" -> bug:2, feature:2 (non-zero); --check exit 0 prints nothing; --kind feature --dry-run prints feat-7-; --kind bug --dry-run prints bug-6-; counter untouched (sha256 identical before/after dry runs); ids.txt content exactly "bug=5\nfeature=6".
+  Escalations: none
+
+CU_ID=cu-003 | STATUS=CONVERGED | IMPLEMENTED_BY=cod-2 | VERIFICATION_RESULT=PASSED
+  Scope: .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md, .LLMDD/skills/init-repo/SKILL.md, .LLMDD/tools/README.md
+  Proofs: grep -c "RULE.NUM.GLOBAL_SPEC_IDS" -> 1 (inserted at line 197 immediately after RULE.ADV.APPROVAL_REQUIRED line 196); grep -c "spec-driven/ids.txt" init-repo SKILL.md -> 1 (cleanup sentence applied verbatim); grep -c "next-spec-id.py" README.md -> 5 (non-zero); wc -c README.md -> 1368 (above 200). Only the three in-scope files modified by this CU.
+  Escalations: none
+
+Escalation count: 0. No CU required code-lead repair.
+
+# 2. E2E TEST RESULTS (all waves, cu-001..cu-003)
+
+Test: python3 .LLMDD/tools/test_next_spec_id.py -> PASS, exit 0
+  - Fixture repo under /tmp/opencode with bug-5 + feat-5
+  - Sibling branches branch-a/branch-b cut from same commit get different bug ids
+  - Clean --check prints nothing, exit 0
+  - Injected duplicate bug-5-shadow.md made --check exit 1
+  - Dry-run printed a feat- id without writing
+Test: python3 .LLMDD/tools/next-spec-id.py --check -> exit 0, prints nothing (clean numbering)
+Test: python3 .LLMDD/tools/next-spec-id.py --kind feature --dry-run -> prints "feat-7-"
+Test: python3 .LLMDD/tools/next-spec-id.py --kind bug --dry-run -> prints "bug-6-"
+Test: python3 -m py_compile .LLMDD/tools/next-spec-id.py .LLMDD/tools/test_next_spec_id.py -> OK both files
+Test: uvx mypy --strict .LLMDD/tools/next-spec-id.py .LLMDD/tools/test_next_spec_id.py -> "Success: no issues found in 2 source files", zero errors
+Test: grep -c "typing.Any\|Any" both tool files -> 0; bare-first-binding probe -> nothing (explicit annotation at first binding holds)
+
+Test failures: 0.
+Convergence: reached on first e2e run (iteration 0 of max 3). No repair loop needed.
+
+# 3. REPAIRS MADE
+
+None. No escalations, no test failures, no cross-CU conflicts. Wave 2 CUs touch disjoint files (cu-002: skills + ids.txt; cu-003: sys prompt + init-repo + README) and compose cleanly with wave 1 (cu-001: allocator + fixture test).
+
+# 4. ARCHITECTURE COMPLIANCE CHECK
+
+ARCH.PYTHON.EXPLICIT_DECLARATION (CRITICAL): PASS — every local/attribute/arg/return annotated at first binding; TypeVar definitions stay bare.
+ARCH.PYTHON.NO_ANY (CRITICAL): PASS — no typing.Any; no bare dict/list/tuple/set; TypeAlias used (Serial, SpecKind, CounterMap, KindMax, Findings).
+ARCH.PYTHON.SLOTTED_FROZEN_DATACLASS (MAJOR): PASS — Usage, Violation, RefSpec, Repo are @dataclass(slots=True, frozen=True).
+ARCH.PYTHON.MONADIC_ERROR (MAJOR): PASS — expected/domain failures via return codes and dataclass wrappers (Usage/Violation/Findings); try-except reserved for OS-level subprocess boundaries.
+ARCH.HEX/DI/DIP/NO_CROSS_LAYER: PASS — tools are repo-agnostic, derive root from __file__, no cross-layer imports; skill/tensor changes are documentation/rules only.
+ARCH.DOTENV: N/A — no dotenv dependency in this feature.
+
+# 5. RECOMMENDATION FOR NEXT INTERVAL
+
+No further repair needed. Commit the wave-1 + wave-2 implementation (cu-001..cu-003) as a single consolidated commit. After commit, run next-spec-id.py --check once more on the committed tree to confirm the counter (bug=5, feature=6) is consistent with the spec tree (highest bug file = 5, highest feature file = 6). The feature is ready for DTR re-scan (WORKFLOW STEP8) in the next iteration.

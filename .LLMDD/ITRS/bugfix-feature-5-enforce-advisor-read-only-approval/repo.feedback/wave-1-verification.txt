@@ -1,0 +1,68 @@
+WAVE 1 VERIFICATION REPORT
+==========================
+
+Wave: 1
+Feature: bugfix-feature-5-enforce-advisor-read-only-approval
+Max fix iterations: 3
+Verifier: Code Lead
+Date: 2026-10-16
+
+CU STATUS SUMMARY
+-----------------
+cu-003: COMPLETED | VERIFICATION_RESULT=PASSED | ESCALATION=none
+
+DETAILED CU STATUS
+------------------
+cu-003:
+  - CODER_NAME: coder
+  - DATE: 2026-10-16
+  - CLARITY_RATING: 5
+  - STATUS: COMPLETED
+  - ESCALATION_REASON: none
+  - ESCALATION_DETAIL: none
+  - VERIFICATION_RESULT: PASSED
+  - VERIFICATION_DETAILS: cu-003 builds the deterministic Advisor approval-token gate: .LLMDD/tools/check-advisor-approval.py (token schema + gate script validating Designer-issued tokens against proposed changes, exit 0 allow / exit 1 deny / exit 2 usage) plus .LLMDD/approvals/ home with .gitkeep and no grant. Code lead re-verified end state independently: script diffed EXACT_MATCH against CU fence; py_compile COMPILE_OK; six probes all per spec (missing=1, malformed=1, expired=1, file_scope=1, cmd_scope=1, allowed=0 printing ALLOWED: t-valid); grep -c "Any" = 0; validate-steps.py exit 0; test_synopsis_budget.py BUDGET_OK 3. No escalation — CU was already implemented and verified by the coder; code lead re-verified end state byte-exactly. Do-not-touch list respected: advisor.md, coder.md, verifier.md, opencode.json, sys tensor, Scala sources, ITR frames and feedback files untouched. Repo hygiene flagged for commit: .gitignore line 39 (/.LLMDD/tools/*) covers the new script — commit requires git add -f .LLMDD/tools/check-advisor-approval.py (same as existing tool negations); .LLMDD/approvals/ is untracked.
+
+VERIFICATION TEST RESULTS
+-------------------------
+test_synopsis_budget.py: BUDGET_OK 3 (PASS) — MAX_ATTEMPTS=3 equals runner retry cap 3
+validate-steps.py:
+  - cu-003: PASS (dummy-proof gate: exact file paths, fenced code, Prove lines, Do NOT touch list, Stop when condition, no placeholders)
+CU-003 acceptance probe (T2 re-run): PASS
+  - python3 -m py_compile .LLMDD/tools/check-advisor-approval.py exits 0 printing COMPILE_OK
+  - missing probe exit 1, malformed probe exit 1, expired probe exit 1
+  - file-scope probe exit 1, command-scope probe exit 1
+  - valid in-scope probe exit 0 printing ALLOWED: t-valid
+  - grep -c "Any" prints 0
+  - .LLMDD/approvals/ holds .gitkeep only, no *.json grant
+
+Cross-CU issues
+---------------
+None. Wave 1 contains only cu-003 with no cross-CU dependencies. cu-004 (wave 2) changes to .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md and advisor.md Approval gate body are out of scope for wave 1 and were not touched.
+
+FIX ITERATION TRACKING
+----------------------
+Iteration 1: cu-003 COMPLETED | PASSED | No escalations requiring fix. Convergence achieved.
+Iteration 2: N/A (converged)
+Iteration 3: N/A (converged)
+
+CONVERGENCE STATUS: PASS
+- Wave-1 CU cu-003 in COMPLETED status
+- All verification tests passed
+- No escalations detected
+- Max fix iterations (3) not reached; convergence achieved on iteration 1
+
+ARCHITECTURE COMPLIANCE CHECK
+-----------------------------
+- ARCH.PYTHON: compliant — slotted frozen ApprovalToken dataclass, monadic str|None denials, explicit type annotations at every first binding, no typing.Any, no bare generics (grep -c Any=0)
+- ARCH.NO_CROSS_LAYER: respected (new tools file only, no layer crossings)
+- Do-not-touch list respected: advisor.md, coder.md, verifier.md, opencode.json, sys tensor, Scala sources, ITR frames, feedback files untouched
+- Monadic error handling: str|None denials used instead of try-except for expected/domain failures
+
+RECOMMENDATION FOR NEXT ITERATION
+---------------------------------
+Wave 1 is converged. Wave 2 (cu-004) — widen Advisor frontmatter to read-only set plus git/mkdir/touch, amend tensor rule and Approval gate body to token-plus-script semantics — is ready for the next wave lead session.
+
+COMMIT MESSAGE PREPARATION
+--------------------------
+See: /home/kcat/Repos/llm-driven-design/.LLMDD/ITRS/bugfix-feature-5-enforce-advisor-read-only-approval/repo.feedback/wave-1-commit.txt

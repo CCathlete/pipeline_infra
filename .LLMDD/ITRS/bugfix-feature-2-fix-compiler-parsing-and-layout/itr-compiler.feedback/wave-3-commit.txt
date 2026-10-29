@@ -1,0 +1,45 @@
+Fix: itr-compiler batch parsing + CU layout (bugfix-feature-2, waves 1-3 consolidated)
+
+Consolidated from the COMMIT_MESSAGE fields of all four cu-*.feedback files
+plus the lead-repair notes in wave-1-commit.txt / wave-2-commit.txt:
+
+- cu-001: Fix JSONFormat.parse to accept CU object keys in any order
+  (cu-001). Per-object scan replaces the order-hardcoded cuLocator regex;
+  string-aware findArrayEnd for the cus array; docstring updated. Closes
+  bug-1: content-first / sort_keys batches compile exit 0 with identical
+  outputs across key orders.
+- cu-002: Split inline CU sections into components in JSONFormat (cu-002).
+  splitInlineSections cuts REQUIREMENTS/COORDINATES/IMPLEMENTATION_STEPS/
+  ACCEPTANCE out of a RegularCU's content into CU.components after content
+  extraction, explicit "components" object wins, all-four-absent keeps the
+  legacy single-frame path. Closes bug-2 layout criterion 3.
+- cu-003: Enforce flat-CU fix at compile time (cu-003): batch-level legacy
+  exemption plus all-regular-CU component validation with split-derived
+  content headers; new-schema detection covers effective keys; fail-fast
+  before writes. Non-zero exit naming CU id + missing section(s), no blob
+  left behind; component-less legacy batches keep <cu-id>/<cu-id>.itr.
+- cu-004: YAML parity proven order-independent plus regression tests (JSON
+  key-order, inline splitter, inline-batch layout). YAMLFormat verified
+  key-name based (no production change); +53 JSONFormatTest, +32
+  YAMLFormatTest, new Cu004InlineBatchLayoutTest (batch-file path ->
+  four-file folder, no blobs).
+
+Lead cross-CU repairs (waves 1-2, kept from wave-1/wave-2-commit.txt):
+- CU.scala: CU.sectionLabels / CU.contentSectionKeys — single shared label
+  list for splitter and validation (domain is the only layering-legal home).
+- RequiredPartsValidation: effectiveComponentKeys reads exactly the
+  cu.components map FileSystem writes (kills the pass-with-blob disagreement
+  from the deleted second content re-scan); validateSynopsis is self-gating —
+  explicit-components batches need synopsis data, split-derived/legacy
+  synopsis-less batches stay exempt (feat-1 criteria 9-10 vs bug-2 T2/T3).
+- Compile: detection comments updated; throw-before-write unchanged.
+
+Verified (wave-3 report, 2 of 3 iterations): sbt test 93/93 green (22
+suites: 87 pre-existing + 6 new); key-order filter 1/1; CLI feature matrix
+72/72 PASS — T1 both key orders identical outputs, T1-YAML reordered keys
+exit 0, T2/T2s four-file folders with no blobs, T3 feat-1 batch.json
+reproduces checked-in layout (zero cu-*.itr), T4 legacy preserved, T6/T6b
+missing-section named with nothing written, T-explicit MAX_ATTEMPTS, prose
+and partial-components agreement probes exact. No test file weakened (test
+diffs pure additions, +85/-0, plus one new suite). Tools binaries rebuilt
+and gitignored. No escalations in any wave. Not pushed.

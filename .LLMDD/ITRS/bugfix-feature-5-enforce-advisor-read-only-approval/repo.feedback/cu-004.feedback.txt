@@ -1,0 +1,17 @@
+CU_ID=cu-004
+CODER_NAME=cod-1
+DATE=2026-10-16
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=8
+AI_CREDITS_USED=7
+COMMIT_MESSAGE=cu-004: widen advisor frontmatter to read-only inspection plus git plus mkdir/touch (13 allow rules, ask wildcard), amend RULE.ADV.APPROVAL_REQUIRED in sys tensor to scoped-token (.LLMDD/approvals/<id>.json) plus gate-script (check-advisor-approval.py exit zero) semantics, and rewrite the advisor Approval gate body to match; edits via hardlink twin .opencode/agents/llmdd/advisor.md (inode 75140) so .LLMDD/agents/advisor.md updates in lockstep
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=T1 PASS: grep -c "bash: allow" -> 0; frontmatter sed -n '1,22p' shows edit: deny plus thirteen allow rules (ls, cat, rg, grep, head, tail, find, wc, file, stat, git, mkdir, touch) plus trailing "*": ask; ": allow" rule count = 13. T2 PASS: tensor has exactly 1 RULE.ADV.APPROVAL_REQUIRED line with token plus script semantics and 0 hits for legacy parenthetical "file change, CU frame write"; advisor body has 1 "Approval gate" heading (line 106) and 1 "check-advisor-approval" hit. Gate spot checks: valid in-scope token /tmp/opencode/t-spot.json for docs/notes.md -> ALLOWED: t-spot (exit 0); missing token /tmp/opencode/DOES-NOT-EXIST.json -> DENIED (spot_deny=1). T4 PASS: DTR listing shows repo.dtr; scratch write to /tmp/opencode/adv-probe/draft.txt reads back "draft text"; git status --porcelain shows only the two intended CU-004 tracked edits (.LLMDD/agents/advisor.md via hardlink, .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md) plus untracked .LLMDD/approvals/ (.gitkeep placeholder, outside CU scope, untouched) — no tracked modification introduced by the read plus scratch probes. Hardlink verified post-edit: .opencode/agents/llmdd/advisor.md and .LLMDD/agents/advisor.md share inode 75140 and both carry the new gate body. No-touch list respected: coder.md, verifier.md, opencode.json, Scala sources, Python tools, ITR frames, feedback files untouched; all scratch confined to /tmp/opencode.

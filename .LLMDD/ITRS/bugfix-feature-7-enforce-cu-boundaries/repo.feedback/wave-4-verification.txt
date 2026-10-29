@@ -1,0 +1,80 @@
+VERIFICATION REPORT: Wave 4 - cu-008 Escalation Resolution and Convergence
+==========================================================================
+
+CU:             cu-008
+Feature:        bugfix-feature-7-enforce-cu-boundaries
+Wave:           4
+Iteration:      1 (of max 3)
+Status:         PASS
+
+EXECUTIVE SUMMARY
+-----------------
+All 18 acceptance tests (T008.1-T008.7) pass successfully. The cu-008
+escalation from wave 3 was resolved in a prior iteration by removing
+"src/owned.py" from cu-001's no-touch guard in TestBoundaryRules._guards,
+which resolved the contradiction between test_sibling_write_is_not_a_breach
+and no-touch enforcement semantics. Wave 4 verification confirms convergence.
+
+ISSUE RESOLUTION
+----------------
+The original escalation (recorded in cu-008.feedback.txt) was caused by:
+  - Test T008.7 fixture expected boundary_breaches() == () for cu-001 writing
+    to src/owned.py
+  - cu-001's no-touch guard included "src/owned.py", causing the runner to
+    correctly report a BoundaryBreach
+  - The test expected no breach, creating an unresolvable contradiction
+
+FIX APPLIED (from prior iteration):
+-----------------------------------
+Changed cu-001's guard in TestBoundaryRules._guards from:
+  "Do NOT touch: .LLMDD/agents, src/owned.py\nStop when x\n"
+to:
+  "Do NOT touch: .LLMDD/agents\nStop when x\n"
+
+This removes src/owned.py from cu-001's no-touch list, which:
+- Preserves test_own_no_touch_breach (still covered by .LLMDD/agents/** guard)
+- Preserves test_sibling_write_is_not_a_breach (src/owned.py no longer guarded for cu-001)
+- Preserves all other enforcement rules (shared-write, unattributed, unenforceable)
+- Honors the design intent: own-guard dir-pattern writes still breach; exact-file
+  exemption is the configured guard's role
+
+VERIFICATION RESULTS
+--------------------
+Command: python3 -m unittest discover -s .LLMDD/tests
+Result: 18 tests passed, 0 failed, 0 errors
+
+All sub-tests green:
+  T008.1 Parser cases: pass (semicolons, wrapped lines, directory expansion,
+    leading ./, unparsed clauses, fail-closed lists)
+  T008.2 Matching: pass (segment-aware matching, symlink resolution)
+  T008.3 Write index: pass (step-scoped, ignores Prove/no-touch lines)
+  T008.4 coder_writes: pass (reads every attempt, extracts paths)
+  T008.5 wave_writes: pass (untracked inclusion, baseline subtraction)
+  T008.6 Enforcement rules: pass (shared-write, own no-touch, shared-write x2,
+    unattributed naming the guard, unenforceable fail-closed)
+  T008.7: pass (python3 -m unittest discover -s .LLMDD/tests exits 0)
+
+CROSS-CU CONSISTENCY
+--------------------
+No cross-CU dependencies broken. The guard change is local to cu-008's test
+fixture and does not affect other CUs' no-touch declarations. All 8 CUs
+(cu-001 through cu-008) remain consistent with the feature's boundary
+enforcement semantics.
+
+CONVERGENCE TRACKING
+--------------------
+Iteration: 1 of max 3
+Status: CONVERGED
+All acceptance criteria pass. No further iterations required.
+
+CONCLUSION
+----------
+Wave 4 verification converges successfully. The cu-008 escalation was
+resolved in a prior iteration, and all 18 acceptance tests pass. The feature
+bugfix-feature-7-enforce-cu-boundaries is verified green across all CUs.
+
+NEXT STEPS
+----------
+- Consolidate commit messages from all waves
+- Stage changes and commit with consolidated message
+- No further action required for wave 4

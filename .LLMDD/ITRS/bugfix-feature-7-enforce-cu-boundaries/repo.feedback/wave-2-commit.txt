@@ -1,0 +1,56 @@
+Implement cu-006: enforce CU boundary enforcement in run-waves.py
+
+Changes made to .LLMDD/tools/run-waves.py:
+
+1. cu_scope import (line 23-24): Ensures enforcement block can resolve
+   symlinked patterns and fail closed when patterns are unenforceable.
+
+2. _cu_no_touch function (line 677): Replaced with version that gates flat
+   frame files as well as per-CU folders, parsing no-touch lists from either
+   source via parse_no_touch().
+
+3. run_coder signature (line 1167): Removed no-touch set parameter since
+   enforcement now runs once per wave with every CU's log available. The
+   function now computes its own change set via coder_writes().
+
+4. Change set computation (line 1300-1301): Replaced wave-wide git diff with
+   coder_writes(cu_id, log_dir, project_dir).paths — the CU's own attributed
+   write set from its tool calls, never from the shared working tree.
+
+5. Enforcement block appended (line 1701+): Three boundary rules:
+   Rule 1 (owned breaches): CU fails when its attributed set hits its own
+     no-touch list
+   Rule 2 (collision breaches): Two CUs writing the same path in a wave
+     both fail with rule shared-write
+   Rule 3 (unattributed breaches): Unattributed change hitting any no-touch
+     list fails the wave with rule unattributed + guarded CUs names
+   Supporting dataclasses: BoundaryBreach, functions _resolved, _owned_breaches,
+   _collision_breaches, _unattributed_breaches, boundary_breaches, report_breaches,
+   enforce_boundary.
+
+6. run_wave_parallel signature (line 1760): Added baseline_dirty: frozenset[str]
+   parameter; returns (wave_files_changed, all_passed, written) tuple.
+
+7. Dispatch loop (line 1807-1808): run_coder called without no-touch parameter;
+   scope applied after every coder has finished.
+
+8. Enforcement pass (line 1806-1820): After coder-await loop, before per-CU
+   lead — guards dict built from all CUs' no-touch sets, per-CU writes attributed
+   via coder_writes(), enforce_boundary() called to detect and report breaches.
+
+9. Return statements (line 1855): Both return statements updated to carry
+   written paths: return wave_files_changed, all_passed, written.
+
+10. main_async exit code (line 1998-2024): Returns 0 when convergence status
+    is CONVERGED, 1 otherwise. Dry-run path stays 0. Written paths unpacked
+    from run_wave_parallel result and accumulated into run_written set.
+
+Verification:
+- python3 -m py_compile .LLMDD/tools/run-waves.py: exits 0
+- dry-run with --waves waves.json lists all 4 waves including cu-006
+- Module parses (ast.parse ok)
+- enforce_boundary called once per wave
+- Process exit value is 1 when convergence is not CONVERGED, 0 otherwise
+
+This fix enables CU boundary enforcement per the three rules, with fail-closed
+unenforceable guards and non-zero exit when convergence is not achieved.

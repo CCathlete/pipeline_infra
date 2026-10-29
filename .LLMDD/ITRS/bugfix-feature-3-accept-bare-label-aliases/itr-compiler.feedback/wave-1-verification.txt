@@ -1,0 +1,47 @@
+Wave 1 Verification Report
+==========================
+
+CU: cu-001
+Feature: bugfix-feature-3-accept-bare-label-aliases
+Wave: 1 (bare-label aliases on the splitter plus parser regression tests)
+
+STATUS: PASSED
+
+VERIFICATION DETAILS:
+T1 PASS — all-bare batch (bug-3 repro 1) via .LLMDD/tools/itr-compiler --compile:
+  exit 0, <out>/cu-001/{COORDINATES,REQUIREMENTS,IMPLEMENTATION_STEPS,ACCEPTANCE}.itr
+  written, no cu-001/cu-001.itr blob; component bodies clean (e.g. REQUIREMENTS.itr =
+  header + "Build X.").
+
+T2 PASS — all-colon batch unchanged (exit 0, same four files) and mixed bare/colon batch
+  (bare REQUIREMENTS/COORDINATES + colon IMPLEMENTATION_STEPS:/ACCEPTANCE:) splits fully
+  to the same four-file folder, exit 0.
+
+T3 PASS — two-section batch fails exit 1, stderr names "CU 'cu-001' is missing component
+  'acceptance'" and "'implementation-steps'", no folder/blob written (enforcement throws
+  before any write, Compile.scala untouched).
+
+T4 PASS — sbt "testOnly *JSONFormat*" 11/11 green (3 new bare-label tests included) and
+  full sbt test 96/96 green across 22 suites, no regressions; the two sbt warnings
+  (unused extractJsonString, return-in-parse) are pre-existing.
+
+CHANGES IMPLEMENTED:
+1. CU.scala: Added bare (colon-less) label entries to sectionLabels:
+   - "REQUIREMENTS" -> "requirements", "COORDINATES" -> "coordinates",
+     "IMPLEMENTATION_STEPS" -> "implementation-steps", "ACCEPTANCE" -> "acceptance"
+   Colon forms remain listed first per key to maintain priority.
+
+2. JSONFormat.scala: Updated splitInlineSections method to use groupBy + collectFirst
+   approach that groups labels by component key and picks the first matching label (colon
+   form first, then bare alias), ensuring colon forms never shadow bare prefixes.
+
+3. JSONFormatTest.scala: Added three bare-label parser tests:
+   - "split all four inline sections from bare labels (bug-3 repro 1)"
+   - "split mixed bare and colon labels fully (bug-3 repro 3)"
+   - "prefer the colon label over its bare prefix (bare never shadows colon)"
+
+VERIFICATION ITERATIONS: 1 (converged on first pass)
+MAX FIX ITERATIONS: 3 (not reached — all tests passed on first attempt)
+
+CODER: cod-1
+DATE: 2026-10-10

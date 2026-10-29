@@ -1,0 +1,145 @@
+WAVE 3 VERIFICATION REPORT (FINAL WAVE — FEATURE E2E)
+Feature: bugfix-feature-2-fix-compiler-parsing-and-layout
+Wave: 3 (cu-004) — code lead (verifier session)
+Date: 2026-10-10
+Iterations used: 2 of 3 (iteration 1: 5/72 CLI checks red, all five traced to
+invalid lead-owned test fixtures — no product defect; iteration 2: 72/72 green;
+confirmation runs green). Zero product-code repairs were needed in this wave.
+
+== 1. FEEDBACK / ESCALATION PICKUP ==
+cu-004: STATUS=COMPLETED, VERIFICATION_RESULT=PASSED (feedback
+itr-compiler.feedback/cu-004.feedback.txt, cod-4, 12 min). No ESCALATION.
+Escalation scan across ALL waves: cu-001 COMPLETED, cu-002 COMPLETED,
+cu-003 COMPLETED, cu-004 COMPLETED — ESCALATION_REASON=none everywhere.
+No CU frame was picked up for re-implementation by the lead; step 2/3 of the
+lead instruction (escalated-CU implement + escalated-CU feedback) were
+vacuous by design.
+
+== 2. CODE UNDER TEST (working tree, complete feature) ==
+Main sources (4 files, +249/-29 vs HEAD — unchanged since wave-2 repairs,
+verified by mtime <= tools assembly 10:11:27):
+- infrastructure/parsers/JSONFormat.scala    (cu-001 key order; cu-002 splitter)
+- application/services/RequiredPartsValidation.scala (cu-003 + lead repairs A/B)
+- application/services/Compile.scala         (cu-003 throw-before-write)
+- domain/models/CU.scala                     (lead: CU.sectionLabels /
+                                              CU.contentSectionKeys)
+Tests (all added by cu-004 per its IMPLEMENTATION_STEPS, pure additions):
+- test/.../parsers/JSONFormatTest.scala      (+53, 0 del — key-order + splitter)
+- test/.../parsers/YAMLFormatTest.scala      (+32, 0 del — YAML order-independence)
+- test/.../integration/Cu004InlineBatchLayoutTest.scala (new, 75 lines — real
+  batch-file path -> four-file folder, no blobs)
+No production change was needed for YAMLFormat: cu-004 verified by regex
+extraction that its field scan is key-name based (no order assumption), so
+step 1 of the CU legitimately ends "change no production code".
+
+Tools binary: `sbt assembly` reports "up to date"; md5 a86cb864290e5dcb2f8573f78bcb56fd
+identical for itr-compiler/itr-compiler and .LLMDD/tools/itr-compiler, built
+after the last main-source edit. Both gitignored, not part of the commit.
+
+== 3. REPAIRS MADE IN THIS WAVE ==
+None to product code, none to test files. Iteration 1's five red checks were
+all fixture defects in the lead's own /tmp harness:
+- T-explicit and AGREE2 fed a components-bearing CU WITHOUT the schema-required
+  "content" key, so the parser (correctly, documented "Required content key
+  absent — skip", and the compile-itr skill schema marks content required)
+  dropped the CU: "Compiled 2 CU(s)" and no validation to fire. Fix: add
+  "content": "" to the two fixtures (exactly the shape Feat1ValidationTest
+  serializes for its T2/T3 contracts). No .LLMDD test file was modified by
+  the lead; the harness lives in /tmp/opencode/.
+
+== 4. VERIFICATION RESULTS (final state) ==
+
+T5 — sbt test from itr-compiler/: 93/93 green, 22 suites, 0 failed, 0 aborted
+(87 pre-existing + 6 cu-004 regression tests). PASS, run twice (iteration 1
+and confirmation).
+
+T1 — bug-1 repro, criteria 1-2 (exact batches from the bug spec):
+- content-first and cu-id-first both exit 0, "Compiled 3 CU(s)". PASS.
+- Outputs byte-identical after normalising # TIMESTAMP lines. PASS.
+- sbt "testOnly *JSONFormat* -- -z key-order": 1/1 green. PASS.
+
+T1-YAML (cu-004 acceptance, criterion 1 YAML leg): reordered-keys YAML batch
+via .LLMDD/tools/itr-compiler --compile --yaml-content -> exit 0,
+"Compiled 3 CU(s)". PASS.
+
+T2 — criterion 3, bug-2 minimal repro (exact spec content, no synopsis):
+exit 0; cu-001/{COORDINATES,REQUIREMENTS,IMPLEMENTATION_STEPS,ACCEPTANCE}.itr
+all exist; no cu-001/cu-001.itr; no root cu-001.itr. PASS.
+
+T2s — same batch + synopsis: exit 0; four component files + root SYNOPSIS.itr;
+REQUIREMENTS body "build X.", ACCEPTANCE body "test T1 green.". PASS.
+
+T3 — criterion 4, feat-1 batch.json into an empty folder: exit 0; four
+component files for each of cu-001..cu-005; root ARCH.itr/LEGEND.itr only;
+find -name "cu-*.itr" = 0. PASS.
+
+T4 — criteria 5-6, legacy component-less batch: exit 0; cu-old/cu-old.itr
+exists; no root cu-old.itr; no component files. PASS.
+
+T6 — criterion 7, new-schema batch, cu-bad omits ACCEPTANCE: exit 1; stderr
+names cu-bad and acceptance; nothing written for the offender. PASS.
+
+T6b — criterion 7, split-derived (synopsis-less inline) same omission:
+exit 1, names cu-bad + acceptance, no blob. PASS.
+
+T-explicit — Feat1ValidationTest T3 contract through the CLI (explicit
+components, no synopsis): exit 1 naming MAX_ATTEMPTS. PASS (after fixture
+fix, see section 3).
+
+AGREE — wave-1 watch item 2 regression probe (prose CU mentioning the four
+component filenames inside a synopsis-bearing batch): exit 1 naming cu-prose
+and all four missing components; nothing written. PASS.
+
+AGREE2 — partial explicit components (2 of 4): exit 1 naming exactly
+acceptance + implementation-steps, no false positive on the present keys,
+nothing written. PASS (after fixture fix).
+
+Suite totals: 72/72 CLI checks PASS + sbt 93/93 PASS (twice) + key-order
+filter 1/1 + Cu004InlineBatchLayoutTest 1/1 PASS.
+
+== 5. WATCH ITEMS ==
+1. YAML inline sections (wave-2 watch item 1, resolved as documented loud
+   fail): a synopsis-bearing YAML batch whose CUs carry the four inline
+   sections still exits 1 with "CU 'cu-001' is missing component x4" and
+   writes nothing (probe confirmed, zero blob files). This is loud-and-clean,
+   not a blob, and no test asserts the opposite: cu-004's CU content scoped
+   YAML parity to the key-order assumption (criterion 1) and the feature's
+   T2/T3 layout criteria are exercised through the JSON path. The YAML
+   splitter question is therefore an ADV-scope question for a future
+   iteration, not a test failure — recorded, not changed (NO_DESIGN_CHANGE).
+2. A batch object with no "content" key is silently skipped by the parser
+   ("Compiled 2 CU(s)") — pre-existing documented behaviour, content is
+   schema-required per the compile-itr skill; unchanged by this feature.
+3. Bug specs bug-1 and bug-2 still read Status: Open / "Pending" fix summary.
+   Not touched (spec files are Advisor/Designer-owned); see recommendation.
+
+== 6. ARCHITECTURE COMPLIANCE ==
+- Layer order respected: parsers stay in infrastructure, enforcement in
+  application, shared label list in domain (lead-owned addition from wave 2).
+- No cross-layer dependency introduced; FileSystem writer untouched.
+- Test files: only cu-004 wrote them, exactly as its frame instructs
+  (its IMPLEMENTATION_STEPS mandates the regression tests); lead modified
+  none — test diffs are pure additions (+85/-0) plus one new 75-line suite.
+- git status before commit: 4 modified main sources, 2 modified test files,
+  1 untracked new test file. Feedback dir is gitignored (*.feedback/), as are
+  the tools binaries.
+
+== 7. CONVERGENCE ==
+Iterations: 2 of 3.
+Iteration 1: sbt 93/93 green; 67/72 CLI green; 5 red — all five diagnosed as
+invalid lead fixtures (missing required content key), zero product defects.
+Iteration 2: 72/72 CLI green after fixture correction only.
+Confirmation: sbt 93/93 + key-order 1/1 + Cu004 1/1 green; CLI matrix green.
+STATUS: PASS — all four CUs CONVERGED (cu-001, cu-002, cu-003, cu-004), no
+escalations, no cross-CU repairs outstanding from this wave.
+
+== 8. RECOMMENDATION FOR NEXT ITERATION ==
+1. Commit prepared by this session (consolidated message from all four
+   cu-*.feedback COMMIT_MESSAGE fields + wave-1/wave-2 lead-repair notes).
+   Not pushed — only the interactive Designer may push.
+2. Designer: update bug-1 and bug-2 specs to Resolved with fix summary and
+   proving tests, and flip bugfix-feature-2 to Implemented (spec files are
+   not coder/lead-writable in this workflow).
+3. Optional Advisor scope decision: YAML inline-section splitting (watch
+   item 1) — currently a loud clean failure; take it or explicitly pin it.
+4. STEP8 (dtr-builder re-scan) is next in the pipeline.

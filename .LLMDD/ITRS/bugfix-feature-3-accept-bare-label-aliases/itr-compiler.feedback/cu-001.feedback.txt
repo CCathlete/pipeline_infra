@@ -1,0 +1,17 @@
+CU_ID=cu-001
+CODER_NAME=cod-1
+DATE=2026-10-10
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=25
+AI_CREDITS_USED=50
+COMMIT_MESSAGE=bugfix-feature-3/cu-001: accept bare section-label aliases in inline splitting (bug-3) — extend CU.sectionLabels (domain) with a bare (colon-less) alias per component key, colon form listed first and canonical, and make JSONFormat.splitInlineSections match colon-first per key (groupBy key + collectFirst) so a bare prefix never shadows a colon label; contentSectionKeys agrees by construction over the same list. All-bare and mixed bare/colon batches now compile to four-file CU folders instead of silent legacy blobs; explicit "components" objects still win; all-four-absent still takes the legacy single-frame path; partially-labeled batches keep failing loudly naming CU id + missing sections. Add three bare-label parser tests to JSONFormatTest (all-bare split, mixed split, colon-over-bare priority). No changes to FileSystem.scala, Compile.scala, or YAMLFormat.scala.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=T1 PASS — all-bare batch (bug-3 repro 1) via .LLMDD/tools/itr-compiler --compile: exit 0, <out>/cu-001/{COORDINATES,REQUIREMENTS,IMPLEMENTATION_STEPS,ACCEPTANCE}.itr written, no cu-001/cu-001.itr blob; component bodies clean (e.g. REQUIREMENTS.itr = header + "Build X."). T2 PASS — all-colon batch unchanged (exit 0, same four files) and mixed batch (bare REQUIREMENTS/COORDINATES + colon IMPLEMENTATION_STEPS:/ACCEPTANCE:) splits fully to the same four-file folder, exit 0. T3 PASS — two-section batch fails exit 1, stderr names "CU 'cu-001' is missing component 'acceptance'" and "'implementation-steps'", no folder/blob written (enforcement throws before any write, Compile.scala untouched). T4 PASS — sbt "testOnly *JSONFormat*" 11/11 green (3 new bare-label tests included) and full sbt test 96/96 green across 22 suites, no regressions; the two sbt warnings (unused extractJsonString, return-in-parse) are pre-existing. Matching is anchored in the shared domain list CU.sectionLabels per ARCH.itr so parser and validation agree by construction; no new validation failure types were needed (missing-component detection already reads cu.components, which the splitter populates). Note: build artifacts (itr-compiler/itr-compiler assembly, 6099652 bytes, and the gitignored .LLMDD/tools/itr-compiler copy) were rebuilt/refreshed so the acceptance CLI commands exercise the fixed binary — build-artifact refresh only, no tracked source change beyond the three files in scope.

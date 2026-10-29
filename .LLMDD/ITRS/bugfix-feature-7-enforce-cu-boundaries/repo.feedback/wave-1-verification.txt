@@ -1,0 +1,41 @@
+Wave 1 Verification Report: bugfix-feature-7-enforce-cu-boundaries
+===================================================================
+
+STATUS: PASS - all CUs completed with no escalations requiring intervention
+
+SUMMARY
+-------
+- CU cu-004: STATUS=COMPLETED, VERIFICATION_RESULT=PASSED
+- CU cu-005: STATUS=COMPLETED, VERIFICATION_RESULT=PASSED
+- All CUs in wave 1 validated successfully with validate-steps.py
+
+TEST RESULTS
+------------
+T1 - ALL_FRAMES_PARSE: PASSED (all eight frames parse with 0 unparsed entries)
+T2 - validate-steps.py on bugfix-feature-7 frames: PASSED (cu-001 through cu-008 all exit 0)
+T5 - Step 5 regression check: PASSED (REGRESSIONS=0 for all CUs)
+py_compile: PASSED (cu_scope.py and run-waves.py both compile without errors)
+
+FIX DETAIL
+----------
+No escalations were detected in wave 1. Both cu-004 and cu-005 were already in
+STATUS=COMPLETED state with full verification passing.
+
+- cu-004: Implementation hardened the shared CU scope vocabulary in
+  .LLMDD/tools/cu_scope.py. write_paths() correctly filters out Do NOT touch
+  lines before extracting path-like tokens. All acceptance criteria (T004.1-T004.6)
+  verified. No code deviations from the frame specification.
+- cu-005: Implementation added per-CU change attribution to
+  .LLMDD/tools/run-waves.py. Added CoderWrites/WaveWrites frozen slotted
+  dataclasses, coder_writes(), wave_writes(), and attribute_writes() functions.
+  All acceptance criteria (T005.1-T005.3) verified. The u2500 escape sequence
+  in the fenced code block header is comment-only and has no behavioral impact.
+
+CLOSURE
+-------
+All CUs in wave 1 are implemented and verified. No escalations required
+intervention. The wave is ready for integration.
+
+Note: Pre-existing uncommitted modifications to .LLMDD/tools/run-waves.py and
+.LLMDD/skills/prepare-implementation/SKILL.md carry over from prior work and
+are excluded from the cu-004 and cu-005 commit scope.

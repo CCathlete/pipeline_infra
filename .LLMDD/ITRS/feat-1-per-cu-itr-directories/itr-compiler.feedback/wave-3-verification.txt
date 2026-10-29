@@ -1,0 +1,130 @@
+WAVE 3 VERIFICATION REPORT
+==========================
+Wave: 3
+CUs in wave: cu-003 (writer — CU folders + root SYNOPSIS.itr)
+Date: 2026-10-09
+Role: code lead (verifier)
+Max fix iterations: 3 | Iterations used: 0
+
+1. FEEDBACK REVIEW
+------------------
+- cu-003: STATUS=COMPLETED (NO escalation), VERIFICATION_RESULT=PASSED,
+  CLARITY_RATING=5. Coder (cod-3) reported 80/80 sbt tests plus a manual
+  e2e; no escalation was written.
+
+2. ESCALATIONS
+--------------
+None. Wave 3 carries exactly one CU (cu-003) and its feedback is COMPLETED,
+so no CU had to be picked up and re-implemented by the code lead. No new
+feedback file was required (step 3 of the task: nothing to write — the
+coder's cu-003.feedback.txt stands as-is).
+
+3. CONFORMANCE AUDIT (code lead, against the cu-003 frame files)
+----------------------------------------------------------------
+- STEP 1 (FileSystem.write, first branch):
+    if (cu.cuType == RegularCU && cu.components.nonEmpty)
+      writeComponents(cu, outFolder, force); return
+  VERIFIED — component-carrying regular CUs get ONLY the four component
+  files in out/<cu-id>/, no per-CU .itr blob. Component-less legacy CUs
+  keep the old path: one <cu-id>.itr inside out/<cu-id>/, never at root.
+  writeComponents honours `force` (skip when file exists and force=false)
+  and only creates/overwrites its exact target paths — nothing is ever
+  deleted, so Advisor-placed overrides survive by construction.
+  Component header format matches spec verbatim:
+    "# " + key.toUpperCase.replace("-","_") + ": " + cu.id  -> "# COORDINATES: cu-001"
+- STEP 2 (root SYNOPSIS.itr):
+    FileSystem.writeSynopsis body is byte-for-byte the spec snippet
+    (FEATURES_IMPLEMENTED / MAX_ATTEMPTS / CUS / ENFORCED_BY / SUMMARY),
+    skips when SYNOPSIS.itr exists and force=false, created once per
+    compile. Compile.execute calls cuStore.storeSynopsis(...) after the
+    per-CU store loop only when batch.synopsis.isDefined (raw single-CU
+    mode has no synopsis -> skipped). Exposed through CUStore ->
+    CUWrite.writeSynopsis port (default no-op) so Compile keeps depending
+    on the application layer only — ARCH.DIP respected.
+  VERIFIED.
+- STEP 3 (gitignore, no code): `.gitignore:29` carries
+  `**/IMPLEMENTATION_STEPS.itr`; `git check-ignore` exits 0 for both an
+  in-repo output path and an out/ path. VERIFIED (this is test T5).
+- STEP 4 (verify): the three named integration suites are green; the
+  Feat1LayoutTest (T1) file is deliberately NOT created here — it is a
+  cu-005 (wave 4) ADV deliverable, consistent with the wave-2 ruling that
+  tests are the ADV contract (RULE.VER.REPAIR / TEST_INTEGRITY).
+- ARCHITECTURE_DEVIATION declared by the coder: "MINOR — extended CUWrite
+  port with writeSynopsis (default no-op)". ACCEPTED: a default no-op on
+  an application port is the standard DIP seam in this codebase (matches
+  the existing port style) and adds no application->infrastructure import.
+
+4. TEST EVIDENCE
+----------------
+- sbt test (FULL suite): 80 tests, 18 suites, 0 failures, 0 pending. Green.
+  Run twice (first pass and final confirmation pass) — identical.
+- sbt "testOnly itrcompiler.integration.*": 6 tests, 5 suites, 0 failures
+  (SingleCUWriteTest, BatchJSONWriteTest, BatchYAMLWriteTest,
+  ForceOverwriteTest, AddToExistingFolderTest).
+- sbt assembly: built clean; executable jar at itr-compiler/itr-compiler
+  (gitignored) and refreshed at .LLMDD/tools/itr-compiler (also untracked)
+  so the compile-itr skill / cu-005 T-runs use post-cu-003 behaviour.
+- INDEPENDENT code-lead e2e against the fresh binary — 37 checks,
+  37 passed, 0 failed (run twice, identical):
+    T1 layout (17): ARCH.itr + LEGEND.itr at root; cu-001/ and cu-002/
+      COORDINATES/REQUIREMENTS/IMPLEMENTATION_STEPS/ACCEPTANCE.itr all
+      present; NO cu-001.itr / cu-002.itr blob anywhere; component header
+      "# COORDINATES: cu-001" and body embedded; SYNOPSIS.itr contains
+      FEATURES_IMPLEMENTED, MAX_ATTEMPTS=3, CUS list, ENFORCED_BY=
+      itr-compiler, non-empty SUMMARY.
+    T5 gitignore (2): IMPLEMENTATION_STEPS.itr ignored both in the repo
+      tree and under out/ (check-ignore exit 0).
+    raw single-CU mode (2): frame written under cu-raw/, NO SYNOPSIS.itr.
+    legacy criterion-11 batch (4): component-less CU keeps exactly one
+      <cu-id>.itr in its folder, no component files, no SYNOPSIS.itr,
+      ARCH/LEGEND at root.
+    force + overrides (5): force=false skips an existing component file,
+      force=true overwrites it, Advisor override file
+      (cu-001/ADVISOR-NOTE.itr) survives both recompiles and --force,
+      nothing deleted (SYNOPSIS.itr retained).
+    cu-002 enforcement (6): missing component -> non-zero exit with the
+      message naming CU id 'cu-x' and 'implementation-steps'; missing
+      synopsis -> non-zero exit naming SYNOPSIS/MAX_ATTEMPTS; NO partial
+      output folder is created on either violation.
+
+5. FIX ITERATIONS
+-----------------
+Iteration 1: full suite green (80/80), integration green (6/6),
+  independent e2e 37/37. No failures detected.
+No repair was required. 0 of 3 allowed iterations consumed.
+
+6. ARCHITECTURE COMPLIANCE
+--------------------------
+- No cross-layer imports: application -> infrastructure = NONE;
+  domain -> application/infrastructure/control = NONE; control only wires
+  DI (Container) and parses CLI. Hex + DI + DIP + NO_CROSS_LAYER intact.
+- Port flow: Compile (application) reaches the filesystem only via
+  CUStore -> CUWrite port; FileSystem is the infrastructure adapter.
+- TEST_INTEGRITY respected: no test file was created, edited or deleted
+  by the code lead this wave (existing 18 suites untouched).
+- NO_DESIGN_CHANGE respected: no spec deviation found, so no design was
+  changed; work was read-only auditing plus verification runs.
+- Untracked artefacts cleaned/neutral: e2e fixtures live in
+  /tmp/opencode/wave3-e2e (outside the repo); built jar is gitignored;
+  `.LLMDD/tools/itr-compiler` refreshed but untracked.
+
+7. PER-CU STATUS
+----------------
+- cu-001 domain models ................. CONVERGED (waves 1-3 tests green)
+- cu-002 component/synopsis validation . CONVERGED (repaired in wave 2;
+                                          regression-proof here: 80/80)
+- cu-003 writer + SYNOPSIS.itr ......... CONVERGED (as submitted)
+- cu-004 JSON/YAML schema .............. CONVERGED (round-trip green)
+- cu-005 executable proof T1-T7 ........ not implemented (wave 4)
+
+8. NOTES / RECOMMENDATION
+-------------------------
+- The stale VERIFICATION_RESULT=FAILED in cu-002.feedback.txt predates the
+  wave-2 repair; the coder's file was not overwritten by the lead (feedback
+  is the coder's artifact). The full suite proves the current state green.
+- Feat1LayoutTest / Feat1ValidationTest / Feat1OverrideTest remain cu-005
+  deliverables (wave 4) and were intentionally not created here.
+- Incidental workspace change: `.gitignore` also ignores `**/.bsp` (sbt
+  build-server output). Harmless; final wave lead may include or drop it.
+- Wave 3 is CONVERGED with 0 escalations and 0 repair iterations.
+  Ready for wave 4 (cu-005 executable proof).

@@ -1,0 +1,62 @@
+CU cu-007 Verification Report: bugfix-feature-7-enforce-cu-boundaries
+=====================================================================
+
+STATUS: PASS - Fix applied and verified within 1 iteration (max 3)
+
+FIX SUMMARY
+-----------
+Fixed the per-CU lead gate rule name in .LLMDD/tools/run-waves.py to match
+acceptance criteria T007.1.
+
+PREVIOUS STATE
+--------------
+The per-CU lead gate used _owned_breaches() which emitted rule "no-touch"
+for per-CU lead boundary breaches. However, acceptance criteria T007.1
+explicitly states: "A per-CU lead that writes a path on its CU no-touch list
+fails the wave with rule lead."
+
+The wave lead gate (_paths_against) correctly emitted rule "lead:<cu>", but
+the per-CU lead gate rule name was inconsistent with the acceptance criteria.
+
+FIX APPLIED
+-----------
+Modified the per-CU lead gate in run-wave_parallel (after the coder futures
+loop, before the "recompute files changed" section) to transform breach rules
+from "no-touch" to "lead" after _owned_breaches evaluation.
+
+Changed code (in .LLMDD/tools/run-waves.py):
+  - Before: guard_breaches.extend(_owned_breaches(CoderWrites(cu_id=lead_cu,
+              paths=raw_lead.paths), guards))
+  - After: owned = _owned_breaches(...); for breach in owned:
+              if breach.rule == "no-touch":
+                  guard_breaches.append(
+                      BoundaryBreach(scope=breach.scope, path=breach.path,
+                                     rule="lead"))
+              else:
+                  guard_breaches.append(breach)
+
+This ensures T007.1 compliance: per-CU lead breaches now fail the wave with
+rule "lead" instead of "no-touch".
+
+VERIFICATION RESULTS
+--------------------
+- ast.parse: OK (run-waves.py parses successfully)
+- validate-steps.py: PASSED (cu-007 frame structure valid)
+- T007.1: PASSED - per-CU lead writing CU no-touch path yields breach with
+  rule "lead" and fails the wave
+- T007.2: PASSED - wave lead writing forbidden path yields breach (rule
+  "lead:<cu>"), permitted writes yield none
+- T007.3: PASSED - baseline includes tracked and untracked files, excludes
+  paths this run already wrote across successive waves
+- T007.4: PASSED - _escalated_in reads STATUS=ESCALATION from feedback folder
+  and escalated CUs are excluded from the wave lead guard set
+
+FIX ITERATIONS USED: 1 of 3 max
+
+CHANGED FILES:
+- .LLMDD/tools/run-waves.py: Per-CU lead gate rule name transformation
+- .LLMDD/ITRS/bugfix-feature-7-enforce-cu-boundaries/repo.feedback/cu-007.feedback.txt: Updated feedback
+
+CONVERGENCE STATUS: PASS - CU cu-007 verified and converged within iteration 1.
+No further fixes required. The per-CU lead gate and wave lead gate are both
+correctly enforcing CU boundary checks with proper rule naming.

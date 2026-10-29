@@ -1,0 +1,22 @@
+# CU FEEDBACK: cu-001
+CU_ID=cu-001
+CODER_NAME=cod-1
+DATE=2026-10-20
+CLARITY_RATING=4
+AMBIGUOUS_LINES=step 3 prose says "F4 design-time checks" while the inserted fail labels and ACCEPTANCE T2 both require F7 (followed the fenced code and T2); step 6 prove heredoc line is syntactically broken as authored (a mid-line hash comments out the tail of the statement, NameError on every iteration)
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=D1 write_paths excludes the Do NOT touch declaration line before _EXT.findall (frame's inline module lacks the filter) [MINOR]; D2 pre-declared loop-target annotations (raw_line/entry/line in cu_scope.py, bad/guarded in validate-steps.py) plus Sequence added to the typing import, per ARCH.PYTHON.EXPLICIT_DECLARATION loop-target clause [TRIVIAL]; D3 step-6 prove heredoc repaired to the three-statement form proven in step 5 (transient command typo, no shipped code touched) [TRIVIAL]
+ARCHITECTURE_DEVIATION.SEVERITY=MINOR
+TIME_TAKEN_MINUTES=55
+AI_CREDITS_USED=180
+COMMIT_MESSAGE=Implement cu-001: shared CU boundary vocabulary and F7 design-time gate. Add .LLMDD/tools/cu_scope.py (prose-to-glob clauses, fence-stripping prose reader, right-trimmed entries, ./ prefix normalisation, frozen+slotted NoTouch) and wire F7 checks into .LLMDD/tools/validate-steps.py so absent/empty, unparseable and self-contradictory no-touch lists fail validation. write_paths excludes the Do NOT touch declaration line so path-form guards do not falsely self-clash — without that filter the frame's own step 5/6 proves are unachievable (frame-exact variant empirically yields REGRESSIONS=4 / FEATURE7_FAILURES=1), matching the fix verified in this ITR's prior wave-1 cycle. All proves green: py_compile x2, ALL_FRAMES_PARSE, bug-10 self-contradictory fixture exits 1 printing F7 naming .LLMDD/tools/x.py, REGRESSIONS=0, FEATURE7_FAILURES=0.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=Step 1: python3 -m py_compile .LLMDD/tools/cu_scope.py OK. Step 2: all four shipped bugfix-feature-5 frames parse with empty unparsed tuples (6/6/8/6 entries->patterns), fenced Do NOT touch declarations ignored, prose declaration wins, any Scala source glob matches a scala path and not README.md; final line ALL_FRAMES_PARSE, exit 0. Step 3: python3 -m py_compile .LLMDD/tools/validate-steps.py OK. Step 4: bug-10 inversion — self-contradictory fixture makes validate-steps.py exit 1 printing "F7: no-touch list contains this CU own write target: .LLMDD/tools/x.py". Step 5: feature-5 frames cu-001..cu-004 all PASS, REGRESSIONS=0. Step 6 (with repaired heredoc): this feature's cu-001/cu-002/cu-003 frames all PASS, FEATURE7_FAILURES=0. Acceptance T1/T2/T5 all PASSED. Note: the frame-exact write_paths was pre-tested in a throwaway simulation and flags all five bodies with false F7 self-clashes (the guard line feeds the write-path scan); the shipped filter is the resolution already verified PASS for this CU in repo.feedback/wave-1-verification.txt, and it keeps T2 red exactly as required because the fixture's "Edit .LLMDD/tools/x.py" step text remains a genuine prose write declaration.
+# Deviation D1 rationale: the no-touch line is a guard declaration, not a write declaration; a self-contradiction is a write (step prose such as "Edit .LLMDD/tools/x.py") against a guard. The out-of-band predecessor module (removed in c1b68d7) carried the same exclusion with a docstring stating it; the batch rewrite dropped it. Design intent from REQUIREMENTS ("a CU that lists its own write target as untouchable must fail") is preserved and sharpened.
+# Deviation D2 rationale: ARCH.PYTHON.EXPLICIT_DECLARATION (MUST, CRITICAL) covers loop targets; shipped tools (next-spec-id.py, validate-steps.py) pre-declare loop targets. Annotation-only, zero behaviour change; Sequence import makes the frame's own "owned: Sequence[str]" annotation resolvable.
+# Deviation D3 rationale: frame step 6 line "head=...\",tail=\"#...\",body=..." — the hash after the string literal starts a comment, orphaning tail/body (NameError every iteration, FEATURE7_FAILURES=3 for reasons unrelated to the vocabulary). Repaired to step 5's proven three-statement probe over this feature's frames, writing /tmp/opencode/probe7.json as the frame specifies. Command-only fix; no shipped file affected.
+# COMMIT_SCOPE=PREPARE_ONLY: no commit made. Code lead to commit with COMMIT_MESSAGE above.

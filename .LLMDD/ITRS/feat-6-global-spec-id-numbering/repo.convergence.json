@@ -1,0 +1,52 @@
+{
+  "waves": [
+    {
+      "wave": 1,
+      "cus": [
+        "cu-001"
+      ],
+      "escalations": 0,
+      "coder_status": 0,
+      "lead_status": 0,
+      "files_changed": {},
+      "credits": {
+        "lead": {
+          "input": 176296,
+          "output": 3023,
+          "reasoning": 145,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 0,
+          "cost": 0.0,
+          "session_id": "ses_eb76b038dffevUet6gghMf6lzs",
+          "model": ""
+        }
+      }
+    },
+    {
+      "wave": 2,
+      "cus": [
+        "cu-002",
+        "cu-003"
+      ],
+      "escalations": 0,
+      "coder_status": 0,
+      "lead_status": 0,
+      "files_changed": {},
+      "credits": {
+        "lead": {
+          "input": 599036,
+          "output": 10318,
+          "reasoning": 7187,
+          "cache_read": 352304,
+          "cache_write": 0,
+          "total": 0,
+          "cost": 0.0,
+          "session_id": "ses_eb7449c87ffeYfHGMKABrUBfMB",
+          "model": ""
+        }
+      }
+    }
+  ],
+  "status": "CONVERGED"
+}

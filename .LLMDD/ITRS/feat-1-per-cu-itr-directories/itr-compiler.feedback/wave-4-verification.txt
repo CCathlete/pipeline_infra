@@ -1,0 +1,148 @@
+WAVE 4 VERIFICATION REPORT
+==========================
+Wave: 4
+CUs in wave: cu-005 (executable proof T1-T7)
+Date: 2026-10-09
+Role: code lead (verifier)
+Max fix iterations: 3 | Iterations used: 1 (harness-only; 0 product repairs)
+
+1. FEEDBACK REVIEW
+------------------
+- cu-005: STATUS=COMPLETED (NO escalation), VERIFICATION_RESULT=PASSED,
+  CLARITY_RATING=5, coder cod-5. Reported: sbt test 87 tests / 21 suites /
+  0 failures (80 pre-existing + 7 new), budget script BUDGET_OK 3,
+  git check-ignore exit 0. All four fields independently re-confirmed below.
+- Cross-check of ALL feedback files (waves 1-4): cu-001..cu-005 are all
+  STATUS=COMPLETED. ESCALATION_REASON=none in every file. 0 escalations.
+
+2. ESCALATIONS
+--------------
+None. Wave 4 carries exactly one CU (cu-005) and its feedback is COMPLETED,
+so no CU had to be picked up and re-implemented by the code lead. Step 3 of
+the task (write feedback for escalated CUs implemented) is therefore N/A —
+no new feedback file was written; the coder's cu-005.feedback.txt stands
+as-is (feedback is the coder's artifact, never overwritten by the lead).
+
+3. CONFORMANCE AUDIT (code lead, against the cu-005 frame files)
+----------------------------------------------------------------
+- STEP 1 — Scala integration tests (T1-T4, T6a, T7): VERIFIED.
+  Feat1LayoutTest (2 tests): T1 asserts all four component files per CU,
+  root ARCH.itr/LEGEND.itr, SYNOPSIS with FEATURES_IMPLEMENTED +
+  MAX_ATTEMPTS + non-empty SUMMARY, NO per-CU .itr blob in folder AND none
+  flat at root; second test covers legacy component-less batch (one frame
+  inside cu-<id>/, no root flat, no components, no SYNOPSIS — criterion 11).
+  Feat1ValidationTest (4 tests): T2 names cu-x + implementation-steps with
+  NO output folder on failure; T3 names MAX_ATTEMPTS, no output; T7 names
+  summary, no output; T6a coordinates ["TYPE.NOPE.DoesNotExist"] compiles
+  exit 0 and writes cu-new/ (creation semantics).
+  Feat1OverrideTest (1 test): T4 pre-placed extra file byte-identical after
+  recompile both WITHOUT and WITH --force; component file still written.
+  All three suites live under src/test/scala/itrcompiler/integration/ and
+  follow the existing AnyFunSpec style — matches STEP 1 exactly.
+- STEP 2 — Gitignore proof (T5): VERIFIED. `git check-ignore` exits 0 for
+  (a) in-tree ITR path, (b) out/ path, (c) the frame-dir IMPLEMENTATION_STEPS
+  of cu-005 itself (rule `**/IMPLEMENTATION_STEPS.itr`, .gitignore:29). No
+  Scala test added, exactly as the frame prescribes.
+- STEP 3 — Runner retry budget (T6b): VERIFIED. New self-testing script
+  .LLMDD/tools/test_synopsis_budget.py parses MAX_ATTEMPTS out of the real
+  feat-1 SYNOPSIS.itr and prints `BUDGET_OK 3` (exit 0). No harness added.
+- STEP 4 — Full suite green: VERIFIED. `sbt test` from itr-compiler/ :
+  87 tests, 21 suites, 0 failures, 0 pending — run twice (16:06 and 16:10
+  confirmation pass), identical. No pre-existing suite broken.
+- ACCEPTANCE ("all new tests pass; full existing suite still passes"): MET.
+- TEST_INTEGRITY: the code lead created/edited NO file under src/test/ in
+  this repo. The only script edited was the lead's own throwaway e2e harness
+  in /tmp/opencode/wave4-e2e/ (outside the repository).
+
+4. TEST EVIDENCE
+----------------
+- sbt test (FULL suite): 87 tests, 21 suites, 0 failures — twice, identical.
+- sbt "testOnly itrcompiler.integration.*": 13 tests, 8 suites, 0 failures
+  (includes Feat1LayoutTest / Feat1ValidationTest / Feat1OverrideTest plus
+  the 5 pre-existing integration suites — no regressions).
+- sbt assembly: clean; binary itr-compiler/itr-compiler refreshed (gitignored).
+- INDEPENDENT code-lead e2e against the fresh binary — 49 checks, 49 passed,
+  0 failed (harness: /tmp/opencode/wave4-e2e/run.sh, outside the repo):
+    T1 layout (18): ARCH/LEGEND at root; cu-001/ + cu-002/ each hold all
+      four component files; NO per-CU blob in folder, NO flat root blob;
+      header "# COORDINATES: cu-001"; body embedded; SYNOPSIS.itr carries
+      FEATURES_IMPLEMENTED, MAX_ATTEMPTS=3, CUS list, ENFORCED_BY=itr-compiler,
+      non-empty SUMMARY.
+    T5 gitignore (3): IMPLEMENTATION_STEPS.itr ignored at in-tree ITR path,
+      out/ path, and frame-dir path (exit 0 each).
+    raw single-CU mode (2): frame under cu-raw/, NO SYNOPSIS.itr.
+    legacy criterion-11 batch (4): one <cu-legacy>.itr inside its folder,
+      no component files, no SYNOPSIS, ARCH/LEGEND at root.
+    T4 force + overrides (5): force=false skips existing component,
+      force=true overwrites it, Advisor override file byte-preserved through
+      both recompiles, nothing deleted (SYNOPSIS retained).
+    T2 missing component (4): non-zero exit, message names cu-x and
+      implementation-steps, NO partial output folder created.
+    T3 missing synopsis (3): non-zero exit naming synopsis/MAX_ATTEMPTS,
+      no partial output.
+    T7 blank summary (3): non-zero exit naming summary, no partial output.
+    T6a creation semantics (3): nonexistent DTR area -> exit 0, cu-new
+      written, synopsis written.
+    T6b budget (1): test_synopsis_budget.py prints BUDGET_OK 3.
+    feat-1 SYNOPSIS contract (3): MAX_ATTEMPTS=3, FEATURES_IMPLEMENTED,
+      non-empty summary present in the real artifact.
+- Note on SUMMARY format: the hand-written feat-1 SYNOPSIS.itr uses
+  SUMMARY.1/.2/.3 lines; compiler-generated SYNOPSIS uses SUMMARY=. Both
+  satisfy "non-empty implementation summary". No tool parses SUMMARY from
+  files; Feat1LayoutTest asserts SUMMARY= only on compiler output (green).
+
+5. FIX ITERATIONS
+-----------------
+Iteration 1: full suite green (87/87), integration green (13/13),
+  T5 green, T6b green; independent e2e 48/49. The single FAIL was a FALSE
+  POSITIVE in the code lead's own /tmp e2e harness (regex required
+  `SUMMARY=` but the Advisor's hand-written SYNOPSIS.itr uses `SUMMARY.N=`).
+  Fix: corrected the harness regex to accept both forms. No product code,
+  no ADV test, no repo file touched.
+Iteration 2: e2e 49/49; full suite confirmation pass 87/87. CONVERGED.
+1 of 3 allowed iterations consumed; 0 product repairs required.
+
+6. ARCHITECTURE COMPLIANCE
+--------------------------
+- application -> infrastructure imports: NONE (grep verified).
+- domain -> application/infrastructure/control imports: NONE (grep verified).
+- control layer: Container wires app ports to infra adapters (DI seam,
+  ARCH.LAYER.CONTROL); CliParser depends on domain only. Hex + DI + DIP +
+  NO_CROSS_LAYER intact; port flow Compile -> CUStore -> CUWrite port ->
+  FileSystem adapter.
+- TEST_INTEGRITY respected: no ADV/coder test file created, edited or
+  deleted by the code lead this wave (all 21 suites untouched by the lead).
+- NO_DESIGN_CHANGE respected: no spec deviation found; the lead's only
+  repo change is the .gitignore allowlist below (repo hygiene, not design).
+- Untracked artefacts neutral: e2e fixtures live in /tmp/opencode/wave4-e2e
+  (outside the repo); built jar and .LLMDD/tools binaries are gitignored.
+
+7. PER-CU STATUS
+----------------
+- cu-001 domain models ......................... CONVERGED (model tests green)
+- cu-002 component/synopsis validation ......... CONVERGED (repaired wave 2;
+                                                  regression-proof: 87/87)
+- cu-003 writer + root SYNOPSIS.itr ............ CONVERGED (as submitted)
+- cu-004 JSON/YAML schema ...................... CONVERGED (round-trip green)
+- cu-005 executable proof T1-T7 ................ CONVERGED (as submitted;
+                                                  7 new tests all green)
+- e2e suite (T1-T7): 49/49 | escalations: 0 | repair iterations: 1 (harness)
+
+8. NOTES / RECOMMENDATION
+-------------------------
+- Repo-hygiene decision by the lead: added the .gitignore allowlist line
+  `!/.LLMDD/tools/test_synopsis_budget.py` so cu-005's T6b deliverable is
+  actually committed — the pre-existing blanket `/.LLMDD/tools/*` rule would
+  otherwise silently drop it (the frame names it a deliverable; the
+  run-waves.py exception shows the established allowlist pattern).
+  Also includes the incidental `**/.bsp` line carried from wave 3.
+- Feedback directories remain gitignored per policy (.gitignore comment:
+  "Feedback is consumed during the run; the committed record is the code") —
+  this report and all feedback files stay untracked by design.
+- The stale VERIFICATION_RESULT=FAILED in cu-002.feedback.txt predates the
+  wave-2 repair and belongs to the coder's artifact; the full suite proves
+  the current state green.
+- feat-1 is fully implemented and verified: 5/5 CUs CONVERGED, 0 escalations,
+  0 product repairs. Recommendation: proceed to WORKFLOW STEP8 (re-scan with
+  dtr-builder) for the next iteration. Report is informational — no action
+  required from the Designer.

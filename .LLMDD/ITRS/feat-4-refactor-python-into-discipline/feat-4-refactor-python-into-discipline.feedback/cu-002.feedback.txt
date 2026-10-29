@@ -1,0 +1,17 @@
+CU_ID=cu-002
+CODER_NAME=pipeline-operator
+DATE=2026-10-11
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=MAJOR-latitude justifications recorded inline for mutable accumulators (TokenUsage, WaveCredits, CreditTracker: slotted, not frozen) and class C (annotated plain class, dynamic disable)
+ARCHITECTURE_DEVIATION.SEVERITY=MAJOR
+TIME_TAKEN_MINUTES=40
+AI_CREDITS_USED=0
+COMMIT_MESSAGE=feat-4 cu-002: run-waves.py type layer (imports, monads, shared types, slotted classes)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=py_compile exit 0; dry-run exit 0 same shape; ModelFallbackChain frozen/iter/len/repr probed; TokenUsage accumulation probed

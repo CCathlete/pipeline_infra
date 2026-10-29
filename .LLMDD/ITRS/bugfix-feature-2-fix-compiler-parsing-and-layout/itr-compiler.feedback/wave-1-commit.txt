@@ -1,0 +1,25 @@
+Fix: JSON key-order parsing + compile-time flat-CU enforcement (wave 1: cu-001, cu-003)
+
+cu-001 — JSONFormat.parse: replace the order-hard-coded cuLocator regex with
+a per-object scan (findObjectExtent + iterative parseJsonString) so CU object
+keys may appear in any order; add string-aware findArrayEnd for the cus
+array; update the class docstring. Serialized output shape, components and
+synopsis parsing unchanged. Closes bug-1 (content-first / sort_keys batches
+now compile with exit 0, outputs identical across key orders).
+
+cu-003 — enforce the flat-CU fix before any write:
+- RequiredPartsValidation.validateComponents: new-schema detection covers
+  split-derived content headers as well as explicit components
+  (effectiveComponentKeys); batch-level legacy exemption preserved (no
+  synopsis AND zero component-carrying regular CUs); every regular CU in a
+  new-schema batch must carry all four sections, reported as CU id + missing
+  component names.
+- Compile: enforcement still throws before any frame is written, so a
+  failing batch leaves no partial flat blob behind.
+Closes the enforcement criterion (7) of bug-2; component-less legacy batches
+keep their single in-folder frame.
+
+Verified: sbt test 87/87 green; T1 both key-order legs "Compiled 3 CU(s)"
+exit 0 with identical outputs modulo timestamps; T6/T6b exit 1 naming the
+offender with zero files written; T4 legacy layout preserved; tools binary
+rebuilt via sbt assembly and .LLMDD/tools/itr-compiler refreshed (untracked).

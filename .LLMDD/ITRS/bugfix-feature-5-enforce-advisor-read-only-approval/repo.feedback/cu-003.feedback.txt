@@ -1,0 +1,17 @@
+CU_ID=cu-003
+CODER_NAME=coder
+DATE=2026-10-16
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none (Advisor-specified `object` annotations appear only at the untrusted JSON boundary and are isinstance-narrowed into typed values before domain construction — narrowing idiom, not an Any/object escape hatch; no typing.Any, no bare generics)
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=12
+AI_CREDITS_USED=35
+COMMIT_MESSAGE=Implemented cu-003: added .LLMDD/tools/check-advisor-approval.py — deterministic Advisor approval-token gate validating a Designer-issued token (.LLMDD/approvals/<id>.json with id, files, commands, reason, granted_by, expires) against a proposed change, with dir/* file scope and "prefix *" command scope, exit 0 allow / exit 1 deny (reason on stderr) / exit 2 usage; slotted frozen ApprovalToken dataclass, monadic str|None denials, fully annotated (grep -c Any=0); created .LLMDD/approvals/ with .gitkeep and no grant; probes verified: py_compile COMPILE_OK, missing/malformed/expired/file-scope/command-scope all exit 1, valid in-scope probe prints ALLOWED: t-valid exit 0; NOTE for code lead: gitignore rule /.LLMDD/tools/* covers the new script — commit requires git add -f .LLMDD/tools/check-advisor-approval.py (same as existing tool negations)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=Step1: file diffed EXACT_MATCH against the CU fence; python3 -m py_compile exits 0 printing COMPILE_OK. Step2: .LLMDD/approvals/ holds .gitkeep only; ls .LLMDD/approvals/*.json prints nothing (no grant shipped). Step3: six probes — missing=1, malformed=1, expired=1, file_scope=1, cmd_scope=1 (each DENIED with reason on stderr), allowed=0 printing ALLOWED: t-valid; probe tokens confined to /tmp/opencode. Step4: grep -c "Any" prints 0. Acceptance T2 fully green. Repo hygiene: git status shows only ?? .LLMDD/approvals/ and the new script (ignored by /.LLMDD/tools/* — needs git add -f by code lead); py_compile __pycache__ is gitignored; no other file touched, no-touch list respected, nothing committed.

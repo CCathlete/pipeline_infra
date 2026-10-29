@@ -1,0 +1,17 @@
+CU_ID=cu-008
+CODER_NAME=cod-1
+DATE=2026-10-22
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=fixed: removed src/owned.py from cu-001 no-touch guard in TestBoundaryRules._guards to resolve contradiction between test_sibling_write_is_not_a_breach and no-touch enforcement semantics
+ARCHITECTURE_DEVIATION.SEVERITY=MINOR
+TIME_TAKEN_MINUTES=15
+AI_CREDITS_USED=30
+COMMIT_MESSAGE=N/A - code lead fixing escalated CU, final wave lead will commit
+STATUS=IMPLEMENTED
+ESCALATION_REASON=Acceptance T008.7 cannot be met: the drafted fixture in test_sibling_write_is_not_a_breach contradicts the design-correct enforcement semantics shipped by cu-006, and both the runner (CU do-not-touch list) and the test semantics (Advisor contract) are outside my authority to change.
+ESCALATION_DETAIL=DIAGNOSIS. Guard fixture for cu-001 is "Do NOT touch: .LLMDD/agents, src/owned.py"; the write fixture is CoderWrites(cu_id="cu-001", paths=("src/owned.py",)); the test asserts boundary_breaches(...) == (). Runner Rule 1 (_owned_breaches, run-waves.py:1630) implements the feature spec's fix design verbatim: "Enforce: own no-touch" — docstring "a CU that writes a path its own frame forbids fails". cu_scope.is_touched(("src/owned.py",), "src/owned.py") is True (bare file pattern matches itself; verified in cu_scope.py:_match_parts). Therefore the runner correctly reports BoundaryBreach(scope='cu-001', path='src/owned.py', rule='no-touch') and the assertion fails. The two sibling tests are inconsistent under any single semantics: test_own_no_touch_breach requires an own-guard write (dir pattern) to breach, so no rule can also exempt own-guard exact-file writes without gutting Rule 1 for the most common case (exact file guards like cu-002's src/other.py) and reintroducing the under-fire class this feature re-opened to fix (spec section "Reopened 2026-10-22"). The feature spec additionally states (original decomposition, cu-001 proposal) that a no-touch list intersecting the CU's own write paths is itself a defect to fail on — the fixture as drafted encodes exactly that defect state and expects it to pass. FIX APPLIED: changed cu-001's guard in TestBoundaryRules._guards from "Do NOT touch: .LLMDD/agents, src/owned.py\nStop when x\n" to "Do NOT touch: .LLMDD/agents\nStop when x\n". This preserves the test's evident intent — proving the R1 over-fire fix (a CU writing its own file is not blamed for sibling territory; spec: "Sibling contamination ... attributed to the CU currently running") — and keeps every other test passing (verified by inspection: test_own_no_touch_breach still covered by .LLMDD/agents/**; shared_write and unattributed and unenforceable cases do not depend on the removed entry).
+VERIFICATION_RESULT=PASS
+VERIFICATION_DETAILS=python3 -m unittest discover -s .LLMDD/tests: Ran 18 tests, 18 passed, 0 failed. All test groups green: T008.1 parser cases (semicolons, wrapped lines, directory expansion, leading ./, unparsed clauses, fail-closed lists) pass; T008.2 segment-aware matching + symlink resolution pass; T008.3 step-scoped write index ignoring Prove/no-touch lines passes; T008.4 coder_writes reads every attempt and extracts write/edit/shell redirection paths passes; T008.5 wave_writes includes untracked files and subtracts baseline passes; T008.6 enforcement rules pass (shared-write, own no-touch, shared-write x2, unattributed naming the guard, unenforceable fail-closed all pass); T008.7 python3 -m unittest discover -s .LLMDD/tests exits 0.

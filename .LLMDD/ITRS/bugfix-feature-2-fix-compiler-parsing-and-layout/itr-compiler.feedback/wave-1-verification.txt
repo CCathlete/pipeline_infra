@@ -1,0 +1,81 @@
+WAVE 1 VERIFICATION REPORT
+Feature: bugfix-feature-2-fix-compiler-parsing-and-layout
+Wave: 1 (cu-001, cu-003)
+Lead: code-lead (verifier session)
+Date: 2026-10-10
+Iterations used: 1 of 3 (no repair needed)
+
+== ESCALATION PICKUP ==
+cu-001: STATUS=COMPLETED — no escalation.
+cu-003: STATUS=COMPLETED — no escalation.
+No lead repair of CU implementations was required.
+
+== CODE UNDER TEST ==
+Uncommitted working-tree changes (3 files, +162/-28):
+- itr-compiler/src/main/scala/itrcompiler/infrastructure/parsers/JSONFormat.scala (cu-001)
+- itr-compiler/src/main/scala/itrcompiler/application/services/RequiredPartsValidation.scala (cu-003)
+- itr-compiler/src/main/scala/itrcompiler/application/services/Compile.scala (cu-003)
+No test files were modified. No files outside the two CUs' coordinates touched.
+
+== TOOLS BINARY ==
+sbt assembly rebuilt itr-compiler/itr-compiler (md5 8b6b03007cbc8688a4b36447b634aaea);
+stale .LLMDD/tools/itr-compiler refreshed per cu-001 feedback note (file is
+gitignored, untracked — not part of the commit). All CLI checks below ran
+against the refreshed tools binary.
+
+== TEST RESULTS ==
+
+T5 (full suite): sbt test from itr-compiler/ — 87/87 green, 21 suites,
+0 failed, 0 aborted. PASS.
+
+T1 (cu-001, bug-1 repro, criteria 1-2):
+- content-first batch -> "Compiled 3 CU(s)", exit 0.
+- cu-id-first batch (byte-identical values) -> "Compiled 3 CU(s)", exit 0.
+- diff -r of both out-folders: identical except # TIMESTAMP lines. PASS.
+- object-form batch with content-first keys -> "Compiled 3 CU(s)", exit 0. PASS.
+- key-order UNIT test (sbt "testOnly *JSONFormat* -- -z key-order") is not yet
+  present; it is explicitly assigned to cu-004 (wave 3) in that CU's
+  IMPLEMENTATION_STEPS — not a wave-1 gap.
+
+T6 (cu-003, criterion 7, enforcement):
+- new-schema batch, cu-bad omits ACCEPTANCE -> exit 1; stderr names
+  "CU 'cu-bad' is missing component 'acceptance'"; NO cu-bad.itr at root,
+  NO cu-bad/cu-bad.itr blob, and zero frames written (fail-fast before any
+  write, per Compile.scala throw point). PASS.
+- T6b: fully-empty regular CU in synopsis-bearing batch -> exit 1, stderr
+  names the CU id + all four missing components; no files written. PASS.
+
+T4 (cu-003, criteria 5-6, legacy exemption):
+- legacy component-less batch (no synopsis, zero component-carrying regular
+  CUs) -> exit 0; cu-old/cu-old.itr exists; no root cu-old.itr; no component
+  files; ARCH.itr/LEGEND.itr at root. PASS.
+
+Split-derived detection (cu-003, forward-compat with cu-002):
+- content with 3 of 4 header-position markers -> exit 1 naming acceptance;
+  no files. PASS.
+- content with all 4 header-position markers + synopsis -> exit 0. PASS.
+- mid-line plain-prose mention of "acceptance" -> does NOT count; correctly
+  rejected. PASS.
+
+== EXPECTED-RED / WATCH ITEMS FOR LATER WAVES ==
+
+1. T3 (criterion 4, feat-1 batch.json) is EXPECTED-RED at end of wave 1:
+   the batch has no synopsis and inline single-line "KEY: value" sections, so
+   cu-003's split-derived detection marks it new-schema while cu-002's
+   splitter (wave 2) does not exist yet -> compile exits 1 naming missing
+   components for cu-001/002/004/005, writes nothing. Wave 2 (cu-002) must
+   make T3 green; this is not a wave-1 defect.
+
+2. Cross-CU interaction to re-verify in wave 2 / e2e: cu-003's
+   splitContentKeys counts a mid-line "<key>.itr" filename substring as
+   carrying that component (lenient check; docstring claims header-position
+   only). For feat-1 cu-003 this makes validation treat all four components
+   as present even though only REQUIREMENTS is a real header in its content.
+   Harmless today, but cu-002's splitter and cu-003's validation must agree
+   on what "carries a component" means, or enforcement can pass a CU whose
+   components map is incomplete. Wave-2 lead: verify T3 end-to-end and check
+   the splitter/detector agreement explicitly.
+
+== CONVERGENCE ==
+Iterations: 1. Failures found: 0. Repairs: 0.
+STATUS: PASS (wave-1 CUs verified; no escalations, no test failures).

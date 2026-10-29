@@ -1,0 +1,10 @@
+wave-1 commit: bugfix-feature-5-enforce-advisor-read-only-approval
+
+- cu-003: deterministic Advisor approval-token gate — added .LLMDD/tools/check-advisor-approval.py validating a Designer-issued token (.LLMDD/approvals/<id>.json with id, files, commands, reason, granted_by, expires) against a proposed change, exit 0 allow / exit 1 deny (reason on stderr) / exit 2 usage; dir/* file scope and "prefix *" command scope; slotted frozen ApprovalToken dataclass; monadic str|None denials; fully annotated (grep -c Any=0); created .LLMDD/approvals/ with .gitkeep and no grant; six unit probes verified (missing/malformed/expired/file-scope/cmd-source all exit 1, valid in-scope prints ALLOWED: t-valid exit 0)
+- Verification: all tests passed (BUDGET_OK 3 from test_synopsis_budget.py; validate-steps.py cu-003 PASS; T2 acceptance probe PASS; script EXACT_MATCH vs CU fence; py_compile COMPILE_OK)
+- No escalations detected in wave 1 (cu-003 STATUS=COMPLETED)
+- Convergence achieved on iteration 1 of max 3
+- Do-not-touch list respected: advisor.md, coder.md, verifier.md, opencode.json, sys tensor, Scala sources, ITR frames, feedback files untouched
+- Repo hygiene: .gitignore line 39 (/.LLMDD/tools/*) covers the new script — commit requires git add -f .LLMDD/tools/check-advisor-approval.py (same as existing tool negations); .LLMDD/approvals/ is untracked
+
+This commit prepares wave 1 for consolidation. Wave 2 (cu-004) will be handled in the next wave lead session. Do NOT commit — the final wave lead will commit. Do NOT push — the Designer pushes.

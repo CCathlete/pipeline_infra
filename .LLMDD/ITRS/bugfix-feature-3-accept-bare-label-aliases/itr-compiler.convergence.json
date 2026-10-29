@@ -1,0 +1,28 @@
+{
+  "waves": [
+    {
+      "wave": 1,
+      "cus": [
+        "cu-001"
+      ],
+      "escalations": 0,
+      "coder_status": 0,
+      "lead_status": 0,
+      "files_changed": {},
+      "credits": {
+        "lead": {
+          "input": 240137,
+          "output": 17756,
+          "reasoning": 0,
+          "cache_read": 1233792,
+          "cache_write": 0,
+          "total": 1491685,
+          "cost": 0.0,
+          "session_id": "ses_ed9b28d52ffeFgZaHJu3F8r28q",
+          "model": ""
+        }
+      }
+    }
+  ],
+  "status": "CONVERGED"
+}

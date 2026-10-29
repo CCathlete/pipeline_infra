@@ -1,0 +1,6 @@
+feat-6: Implement global spec-id allocator and test.
+
+- Added .LLMDD/tools/next-spec-id.py: global allocator using git refs and local counter.
+- Added .LLMDD/tools/test_next_spec_id.py: fixture test verifying sibling branch id uniqueness, duplicate detection, dry-run behavior.
+- Ensured strict type annotations, no typing.Any, frozen dataclasses, mypy --strict.
+- All tests passed; no failures.

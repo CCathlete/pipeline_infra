@@ -1,0 +1,17 @@
+CU_ID=cu-003
+CODER_NAME=cod-3
+DATE=2026-10-20
+CLARITY_RATING=4
+AMBIGUOUS_LINES=step 1 prose says "three status characters followed by a space, so the path starts at index three" while the mandated code correctly slices at index 3 (porcelain v1 is XY + one space); implemented per the code, which the step-4 probe confirms
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=deviation 1: step 4/5/6 proof scripts call `import run_waves`, which is impossible because the module file is run-waves.py (dash is not importable); probes load it via importlib.util.spec_from_file_location("run_waves", .../run-waves.py) in /tmp only — no repo file created or renamed, all mandated assertions preserved verbatim. deviation 2: _dirty_paths adds 4 lines restoring the first porcelain line's status column before the mandated index-3 parse, because the pre-existing _git_run helper returns stdout.strip() which eats the leading X column of the first line (" M tools/a.py" becomes "M tools/a.py" and line[3:] yields "ools/a.py"), making the CU's own step-4 probe fail with the verbatim block; the mandated parse line itself is kept byte-identical, and restoration is provably safe in both directions (native letter-X lines always have a letter or space+space at index 1/2; even a wrong pad self-heals via the comprehension's per-line .strip())
+ARCHITECTURE_DEVIATION.SEVERITY=MINOR
+TIME_TAKEN_MINUTES=35
+AI_CREDITS_USED=60
+COMMIT_MESSAGE=cu-003: pre-flight dirty-tree refusal in run-waves.py — add _dirty_paths (git status --porcelain, empty on git failure, first-line status-column restoration against _git_run's outer strip), _wave_write_index (reads IMPLEMENTATION_STEPS.itr per CU and extracts declared write targets via cu_scope.write_paths), _wave_dirty_clashes (sorted (owner, path) pairs whose declared write target was dirty at baseline); snapshot baseline_dirty once after tracker init and abort non-zero with a descriptive failure naming owner CU and path before any coder runs, after the dry-run branch so wave planning is unaffected; extend cu_scope import with write_paths; all 7 proof steps green (py_compile x3, PROBE_DETECTS_DIRTY, INDEX_NON_EMPTY, CLASH_DETECTED, dry-run exit 0 listing cu-001/cu-002/cu-003)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=steps 1-3: python3 -m py_compile .LLMDD/tools/run-waves.py green after each edit group; step 4: clean probe repo yields empty dirty set, modified tools/a.py detected, PROBE_DETECTS_DIRTY printed with exit 0 (note: verbatim import run_waves raised ModuleNotFoundError — file is run-waves.py — probes load via importlib spec_from_file_location; with the verbatim parse the probe initially returned frozenset({'ools/a.py'}) because _git_run strips the first porcelain line's leading space — fixed by restoring the lost column before the index-3 slice, then probe green); step 5: index has 3 CUs, cu_scope.py in cu-001, run-waves.py in cu-002 and cu-003, INDEX_NON_EMPTY printed, exit 0; step 6: empty baseline yields no clashes, dirty tools/target.py yields [("cu-001", "tools/target.py")], CLASH_DETECTED printed, exit 0; step 7: dry-run exits 0, plan lists cu-001, cu-002, cu-003 across 3 waves; scope confirmed: only .LLMDD/tools/run-waves.py modified by this CU (validate-steps.py/cu_scope.py dirt belongs to sibling CUs cu-001/cu-002); mypy not installed in environment, not part of CU acceptance

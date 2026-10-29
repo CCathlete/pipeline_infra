@@ -1,0 +1,17 @@
+CU_ID=cu-003
+CODER_NAME=pipeline-operator
+DATE=2026-10-11
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=frame did not name comprehension-bound targets; covered under criterion 2/R1 as _iter_subdirs helper plus loop hoists (same operands, same results)
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=supplement: comprehension targets hoisted to pre-declared loops (any/genexp/dict-comp sites), _iter_subdirs helper added, throwaway _ renamed to _leftover, summary f renamed to fname, usage line renamed to line2; all behavior-preserving per criterion 2
+ARCHITECTURE_DEVIATION.SEVERITY=MINOR
+TIME_TAKEN_MINUTES=60
+AI_CREDITS_USED=0
+COMMIT_MESSAGE=feat-4 cu-003: run-waves.py remainder annotated, monadic refactors applied
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=py_compile exit 0; AST annotation audit 0 problems both files; helper behavior probes green (_detect_*, _file_cu_id, _git, _parse_event_line, _iter_subdirs, convergence)

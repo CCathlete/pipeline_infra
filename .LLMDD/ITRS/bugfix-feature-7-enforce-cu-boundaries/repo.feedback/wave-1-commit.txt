@@ -1,0 +1,16 @@
+Implement cu-004: harden the shared CU scope vocabulary in .LLMDD/tools/cu_scope.py
+Implement cu-005: add per-CU change attribution in .LLMDD/tools/run-waves.py
+
+Changes made:
+- .LLMDD/tools/cu_scope.py: write_paths() now filters out Do NOT touch lines
+  before extracting path-like tokens, preventing false F7 self-clashes
+- .LLMDD/tools/run-waves.py: Added per-CU change attribution block with
+  CoderWrites, WaveWrites, coder_writes, wave_writes, and attribute_writes
+  functions using frozen slotted dataclasses and explicit type annotations
+
+Verification:
+- ALL_FRAMES_PASSED: all eight CU frames parse with 0 unparsed entries
+- validate-steps.py: PASSED on cu-001 through cu-008
+- py_compile: green on both .LLMDD/tools/cu_scope.py and
+  .LLMDD/tools/run-waves.py
+- REGRESSIONS=0: all wave 1 CUs pass step 5 regression check

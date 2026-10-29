@@ -1,0 +1,80 @@
+WAVE 2 VERIFICATION REPORT
+==========================
+
+Wave: 2
+Feature: bugfix-feature-5-enforce-advisor-read-only-approval
+Max fix iterations: 3
+Verifier: Code Lead
+Date: 2026-10-16
+
+CU STATUS SUMMARY
+-----------------
+cu-004: COMPLETED | VERIFICATION_RESULT=PASSED | ESCALATION=none
+
+DETAILED CU STATUS
+------------------
+cu-004:
+  - CODER_NAME: cod-1
+  - DATE: 2026-10-16
+  - CLARITY_RATING: 5
+  - STATUS: COMPLETED
+  - ESCALATION_REASON: none
+  - ESCALATION_DETAIL: none
+  - VERIFICATION_RESULT: PASSED
+  - VERIFICATION_DETAILS: cu-004 widens the Advisor frontmatter to read-only inspection plus git plus mkdir/touch (13 allow rules: ls, cat, rg, grep, head, tail, find, wc, file, stat, git, mkdir, touch, trailing "*": ask), amends RULE.ADV.APPROVAL_REQUIRED in the system tensor to scoped-token (.LLMDD/approvals/<id>.json) plus gate-script (check-advisor-approval.py exit zero) semantics, and rewrites the Advisor Approval gate body to match. Edits via hardlink twin .opencode/agents/llmdd/advisor.md (inode 75140) so .LLMDD/agents/advisor.md updates in lockstep. Depends on cu-003 (gate script exists before wording references it). No escalation — CU was already implemented and verified by the coder; code lead independently re-verified end state.
+
+    T1 PASS: grep -c "bash: allow" .opencode/agents/llmdd/advisor.md = 0; frontmatter holds edit: deny plus 13 allow rules (ls, cat, rg, grep, head, tail, find, wc, file, stat, git, mkdir, touch) plus trailing "*": ask wildcard (grep -c ": allow" = 13).
+    T2 PASS: tensor holds exactly 1 RULE.ADV.APPROVAL_REQUIRED hit with token-plus-script semantics (.LLMDD/approvals/<id>.json, check-advisor-approval.py exit zero) and 0 hits for legacy parenthetical "file change, CU frame write"; advisor body holds 1 "Approval gate" hit and 1 "check-advisor-approval" hit. Gate spot checks: valid in-scope token /tmp/opencode/t-spot.json for docs/notes.md -> ALLOWED: t-spot (exit 0); missing token /tmp/opencode/DOES-NOT-EXIST.json -> DENIED (spot_deny=1).
+    T4 PASS: ls .LLMDD/DTRS/bugfix-feature-5-enforce-advisor-read-only-approval/ exits 0 (repo.dtr present); scratch write to /tmp/opencode/adv-probe/draft.txt reads back "draft text"; git status --porcelain shows only the pre-existing intended CU edits (.LLMDD/agents/advisor.md, .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md) plus untracked .LLMDD/approvals/ — no tracked modification introduced by the read plus scratch probes. Hardlink verified post-edit: both advisor.md paths share inode 75140.
+
+ESCALATION PICKUP
+-----------------
+cu-004 STATUS=COMPLETED (not ESCALATION). No escalation to pick up per RULE.VER.MONITOR. Code lead did not re-implement cu-004; verified the coder's implementation end state instead.
+
+VERIFICATION TEST RESULTS
+-------------------------
+test_synopsis_budget.py: BUDGET_OK 3 (PASS) — MAX_ATTEMPTS=3 equals runner retry cap 3
+validate-steps.py:
+  - cu-001: PASS (dummy-proof gate: exact file paths, fenced code, Prove lines, Do NOT touch list, Stop when condition, no placeholders)
+  - cu-002: PASS (dummy-proof gate: same checks)
+  - cu-003: PASS (dummy-proof gate: same checks)
+  - cu-004: PASS (dummy-proof gate: same checks)
+py_compile .LLMDD/tools/check-advisor-approval.py: COMPILE_OK; grep -c "Any" = 0 (no typing.Any / bare generics)
+
+Cross-CU acceptance probes (T1/T2/T4 from cu-004 ACCEPTANCE.itr): all PASS (details above).
+
+CROSS-CU ISSUES
+---------------
+None. All wave-2 CUs implemented correctly with no cross-CU failures. cu-003 (wave 1) added .LLMDD/tools/check-advisor-approval.py plus .LLMDD/approvals/; cu-004 (wave 2) references the gate script in RULE.ADV.APPROVAL_REQUIRED and the Approval gate body — consistent, no layering conflict. Hardlink twin preserved: single inode 75140 serves both .LLMDD/agents/advisor.md and .opencode/agents/llmdd/advisor.md.
+
+FIX ITERATION TRACKING
+----------------------
+Iteration 1: cu-004 COMPLETED PASSED | No escalations requiring fix
+Iteration 2: N/A (converged)
+Iteration 3: N/A (converged)
+
+CONVERGENCE STATUS: PASS
+- All wave-2 CUs in COMPLETED status
+- All verification tests passed
+- No escalations detected
+- Max fix iterations (3) not reached; convergence achieved early
+
+ARCHITECTURE COMPLIANCE CHECK
+-----------------------------
+- ARCH.PYTHON: respected — check-advisor-approval.py uses slotted frozen ApprovalToken dataclass, monadic str|None denials, full annotation (grep -c Any = 0); no typing.Any, no bare generics
+- ARCH.NO_CROSS_LAYER: respected (agent permission file + system tensor + gate tool only)
+- Do-not-touch list respected: .opencode/agents/llmdd/coder.md, .opencode/agents/verifier.md, .opencode/opencode.json, Scala sources, Python tools, ITR frames, feedback files untouched
+- Hardlink twin preserved: single inode 75140 serves both advisor.md paths
+- RULE.ADV.APPROVAL_REQUIRED holds token-plus-script semantics; legacy parenthetical removed
+- Approval gate body references scoped token + check-advisor-approval + scratch-path exemption
+
+RECOMMENDATION FOR NEXT ITERATION
+---------------------------------
+Wave 2 is converged. cu-004 is COMPLETED with PASSED verification. The uncommitted changes (.LLMDD/agents/advisor.md, .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md) plus cu-003 deliverables (.LLMDD/tools/check-advisor-approval.py via git add -f, .LLMDD/approvals/) are ready for commit with the consolidated commit message. No further escalations.
+
+COMMIT MESSAGE PREPARATION
+--------------------------
+Consolidated from COMMIT_MESSAGE fields of all feedback files across all waves (bugfix-feature-2, bugfix-feature-3, bugfix-feature-5, feat-1, feat-4). See commit below.
+
+Verifier: Code Lead
+Date: 2026-10-16

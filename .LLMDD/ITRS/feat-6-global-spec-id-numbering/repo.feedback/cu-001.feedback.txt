@@ -1,0 +1,17 @@
+CU_ID=cu-001
+CODER_NAME=cod-1
+DATE=2026-10-17
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=8
+AI_CREDITS_USED=45
+COMMIT_MESSAGE=feat-6 cu-001: add global per-repo spec-id allocator (.LLMDD/tools/next-spec-id.py) that scans the highest serial across the working tree plus every git ref (spec filenames and each ref's ids.txt counter) and writes max+1 to .LLMDD/spec-driven/ids.txt, with --dry-run/--prefix/--check modes and exit discipline 0/1/2; add standalone fixture test (.LLMDD/tools/test_next_spec_id.py) proving two sibling branches cut from the same commit receive different bug ids, duplicate serials exit 1, and dry-run leaves the counter untouched. Typed per sibling tools: explicit annotation at first binding, no typing.Any, slotted frozen dataclasses; mypy --strict clean.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=All six implementation-step proofs green. (1) py_compile next-spec-id.py -> COMPILE_OK. (2) py_compile test_next_spec_id.py -> TEST_COMPILE_OK. (3) python3 .LLMDD/tools/test_next_spec_id.py -> PASS, exit 0: fixture repo under /tmp/opencode with bug-5+feat-5, sibling branches branch-a/branch-b from the same commit got different bug ids (bug-6- vs bug-7-), clean --check printed nothing, injected duplicate bug-5-shadow.md made --check exit 1, dry-run printed a feat- id. (4) uvx mypy --strict on both files -> "Success: no issues found in 2 source files", zero errors. (5) In this repo (8 local branches): dry runs printed feat-7- and bug-6- (global max across all refs + 1); --check exited 0 printing nothing; git status --short listed only the two new tool files (.LLMDD/DTRS/feat-6-global-spec-id-numbering/repo.dtr was already tracked, hence not shown); .LLMDD/spec-driven/ids.txt was never created by the dry runs (counter untouched). (6) grep -c "Any" -> 0 for both files; bare-assignment probe (grep -n "^[A-Za-z_]* *=" | grep -v ":.*: ") printed nothing, confirming annotation at first binding. No-touch list respected: only the two new files were created; skill rewiring (cu-002), init-repo reset and tools README (cu-003) left for their own CUs. Nothing committed.

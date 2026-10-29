@@ -1,0 +1,17 @@
+CU_ID=cu-002
+CODER_NAME=cod-2
+DATE=2026-10-16
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=10
+AI_CREDITS_USED=40
+COMMIT_MESSAGE=Implement cu-002: add machine-checkable approval-grant rule RULE.ADV.APPROVAL_REQUIRED to the system tensor (inserted directly after RULE.ADV.SEVERITY_BASELINE, byte-identical to spec) and append an Approval gate section to the Advisor body in .opencode/agents/llmdd/advisor.md (hardlink twin .LLMDD/agents/advisor.md, same inode) after the Constraints section, so any Advisor write requires an explicit, specific Designer approval grant naming files plus commands plus reason, recorded in the session before the write, with prompt text never counting as approval and silence as denial. No other files touched.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=T2 GREEN: grep -c RULE.ADV.APPROVAL_REQUIRED sys-prompt = 1 (line 196, immediately after RULE.ADV.SEVERITY_BASELINE at line 195, byte-exact via diff against expected text); grep -c 'Approval gate' advisor.md = 1 (line 99, appended after Constraints at end of file, byte-exact via diff of last 5 lines against expected section); grep -c 'Silence is denial' advisor.md = 1. T3 GREEN: frontmatter-only probe (body stripped, temp copy in /tmp/opencode) still shows 'edit: deny' at frontmatter line 5 — capability deny is prose-independent; hardlink twin verified intact (both paths inode 75140). T4 GREEN: ls .LLMDD/DTRS/bugfix-feature-5-enforce-advisor-read-only-approval/ exits 0 (repo.dtr present), cat sys-prompt exits 0, git status --porcelain identical before and after all read commands — zero modifications from the read path. Do-not-touch list respected: coder.md, verifier.md, opencode.json, Scala sources, Python tools, and all ITR frame/feedback files other than this one were not modified. NOTE: both cu-002 edits were already present in the working tree from a prior interrupted attempt (attempt-0/attempt-1 logs); I verified byte-exactness and correct placement against the CU spec instead of re-inserting, guaranteeing no duplicate lines or sections.

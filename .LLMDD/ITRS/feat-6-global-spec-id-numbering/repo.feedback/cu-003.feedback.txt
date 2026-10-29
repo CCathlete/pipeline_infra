@@ -1,0 +1,17 @@
+CU_ID=cu-003
+CODER_NAME=cod-2
+DATE=2026-10-17
+CLARITY_RATING=4
+AMBIGUOUS_LINES=IMPLEMENTATION_STEPS step 2 says "replacing its cleanup sentence" — SKILL.md contains three candidate sentences about cleanup (frontmatter description, intro paragraph, Commands comment, Rules bullet). Resolved to the Rules bullet "Delete only inside these four directories: ..." because it is the only complete imperative sentence enumerating the four directories that the replacement sentence extends with ids.txt.
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=10
+AI_CREDITS_USED=40
+COMMIT_MESSAGE=feat-6 cu-003: make global spec-id numbering a binding tensor rule and reset the counter on repo lifecycle — add RULE.NUM.GLOBAL_SPEC_IDS to .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md immediately after RULE.ADV.APPROVAL_REQUIRED; extend the init-repo cleanup rule in .LLMDD/skills/init-repo/SKILL.md to also delete .LLMDD/spec-driven/ids.txt (leaving it present but empty) so a fresh repo restarts at serial 1; write .LLMDD/tools/README.md documenting next-spec-id.py (--kind/--prefix/--dry-run/--check, exit codes 0/1/2) and check-advisor-approval.py as repo-agnostic tooling.
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=T6 acceptance proofs all pass: grep -c "RULE.NUM.GLOBAL_SPEC_IDS" .LLMDD/prompts/llm-driven-design-sys-prompt.itr.md = 1 (exact count, inserted at line 197 immediately after RULE.ADV.APPROVAL_REQUIRED at line 196); grep -c "spec-driven/ids.txt" .LLMDD/skills/init-repo/SKILL.md = 1 (non-zero, replacement sentence applied verbatim as one bullet line); grep -c "next-spec-id.py" .LLMDD/tools/README.md = 5 (non-zero); wc -c .LLMDD/tools/README.md = 1368 (above 200). git status confirms only the three in-scope files were modified by this CU; no-touch files (next-spec-id.py, test_next_spec_id.py, skills/bug/SKILL.md, skills/feature/SKILL.md, spec-driven/ids.txt, DTR/ITR artifacts) untouched by cod-2 — their modified/untracked state in git belongs to sibling CUs cu-001/cu-002. No commit made per RULE.COD.COMMIT_SCOPE=PREPARE_ONLY.

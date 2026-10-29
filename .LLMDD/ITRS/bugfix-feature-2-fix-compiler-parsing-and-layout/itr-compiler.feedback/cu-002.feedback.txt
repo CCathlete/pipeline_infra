@@ -1,0 +1,17 @@
+CU_ID=cu-002
+CODER_NAME=cod-2
+DATE=2026-10-10
+CLARITY_RATING=5
+AMBIGUOUS_LINES=none
+MISSING_CONTEXT=none
+TOO_MUCH_DETAIL=none
+ARCHITECTURE_DEVIATION=none
+ARCHITECTURE_DEVIATION.SEVERITY=NONE
+TIME_TAKEN_MINUTES=15
+AI_CREDITS_USED=60
+COMMIT_MESSAGE=Split inline CU sections into components in JSONFormat (cu-002)
+STATUS=COMPLETED
+ESCALATION_REASON=none
+ESCALATION_DETAIL=none
+VERIFICATION_RESULT=PASSED
+VERIFICATION_DETAILS=sbt test 87/87 green (all 21 suites); temp CU002TempVerifyTest 6/6 green then removed (inline split to 4 components, legacy empty stays empty, explicit components wins, arch/legend exempt, feat-1 batch.json all 5 regular CUs parse to 4 components each, FileSystem writes 4 files with no blob); CLI T2-with-synopsis green via sbt run (Compiled 3 CUs, cu-001 holds COORDINATES/REQUIREMENTS/IMPLEMENTATION_STEPS/ACCEPTANCE.itr, find -name cu-*.itr = 0). Exact bug-2 /tmp/batch_inline.json without synopsis parses to 4 components but currently hard-fails on SYNOPSIS enforcement from uncommitted wave-1 cu-003 changes (expected cross-CU interaction; enforcement belongs to cu-003 per this CU); same applies to synopsis-less feat-1 T3 CLI path, whose parser-level half is green. Only modified itr-compiler/src/main/scala/itrcompiler/infrastructure/parsers/JSONFormat.scala (splitInlineSections + fallback call, RegularCU-gated, explicit-wins); FileSystem/validation/Compile/YAMLFormat untouched.

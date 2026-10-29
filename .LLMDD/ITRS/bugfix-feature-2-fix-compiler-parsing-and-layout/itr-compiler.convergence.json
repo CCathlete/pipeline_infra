@@ -1,0 +1,75 @@
+{
+  "waves": [
+    {
+      "wave": 1,
+      "cus": [
+        "cu-001",
+        "cu-003"
+      ],
+      "escalations": 0,
+      "coder_status": 0,
+      "lead_status": 0,
+      "files_changed": {},
+      "credits": {
+        "lead": {
+          "input": 47361,
+          "output": 9030,
+          "reasoning": 9986,
+          "cache_read": 1139712,
+          "cache_write": 0,
+          "total": 1206089,
+          "cost": 0.0,
+          "session_id": "ses_edb3ac768ffeGLNSSWmiYEYnQX",
+          "model": ""
+        }
+      }
+    },
+    {
+      "wave": 2,
+      "cus": [
+        "cu-002"
+      ],
+      "escalations": 0,
+      "coder_status": 0,
+      "lead_status": 0,
+      "files_changed": {},
+      "credits": {
+        "lead": {
+          "input": 97696,
+          "output": 16783,
+          "reasoning": 34564,
+          "cache_read": 3441664,
+          "cache_write": 0,
+          "total": 3590707,
+          "cost": 0.0,
+          "session_id": "ses_edb2c1574ffe7kj24Q7qH4Ceqt",
+          "model": ""
+        }
+      }
+    },
+    {
+      "wave": 3,
+      "cus": [
+        "cu-004"
+      ],
+      "escalations": 0,
+      "coder_status": 0,
+      "lead_status": 0,
+      "files_changed": {},
+      "credits": {
+        "lead": {
+          "input": 73630,
+          "output": 14887,
+          "reasoning": 11480,
+          "cache_read": 2081152,
+          "cache_write": 0,
+          "total": 2181149,
+          "cost": 0.0,
+          "session_id": "ses_edb1d15c5ffes415tVgzJ5MW6z",
+          "model": ""
+        }
+      }
+    }
+  ],
+  "status": "CONVERGED"
+}
